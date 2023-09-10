@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "version": "1.0",
+  "name": "PokerEye+ (Plus) for Ignition Casino",
+  "description": "An easy-to-use Chrome extension that records & calculates statistics while playing on Ignition Casino's Online Poker in your browser.",
+  "icons": {
+    "16": "resources/logo_16.png",
+    "48": "resources/logo_48.png",
+    "128": "resources/logo_128.png"
+  },
+  "permissions": ["activeTab", "*://*.ignitioncasino.eu/static/poker-game/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.ignitioncasino.eu/static/poker-game/*"],
+      "run_at": "document_idle",
+      "js": ["main.js"]
+    }
+  ]
+}
