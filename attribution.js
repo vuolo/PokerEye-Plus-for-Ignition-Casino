@@ -1,7 +1,7 @@
-const ATTRIBUTION_STRING =
-  "PokerEye+ (Plus) for Ignition Casino - engineered by Michael Vuolo";
-
-const asciiLogo = `
+const SOFTWARE_NAME = "PokerEye+ (Plus) for Ignition Casino";
+const SOFTWARE_VERSION = "1.0.0";
+const AUTHOR = "Michael Vuolo";
+const ASCII_LOGO = `
                     @                   
                     @                   
       @@            @            @@     
@@ -17,20 +17,19 @@ const asciiLogo = `
               @@@@@@@@@@@@@             
        @@                       @@      
       @@            @            @@     
-                    @                   
-`;
+                    @                   `;
+const ASCII_LOGO_BORDER_Y = new Array(40).fill("=").join("");
 
-function printAttributionStyle() {
-  const divider = new Array(27).fill("=").join("");
+function displayAttribution() {
   console.log(
     "%c%s%c%s%c%s",
-    "color: magenta; font-size: 1.5em; background: black; font-weight: bold;",
-    `${divider}`,
     "color: magenta; background: black;",
-    `${asciiLogo}`,
+    `${ASCII_LOGO_BORDER_Y}${ASCII_LOGO}\n${ASCII_LOGO_BORDER_Y}\n\n`,
     "color: magenta; font-size: 1.5em; background: black; font-weight: bold;",
-    `${divider}\n${ATTRIBUTION_STRING}`
+    `${SOFTWARE_NAME} v${SOFTWARE_VERSION}\n`,
+    "color: magenta; font-size: 1.2em; background: black; font-style: italic;",
+    `\nEngineered by ${AUTHOR}`
   );
 }
 
-printAttributionStyle();
+displayAttribution();
