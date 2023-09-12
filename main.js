@@ -1,3 +1,5 @@
+const TICK_RATE = 100; // ms
+
 class Player {
   constructor(dom, seatNumber, tableSlotNumber) {
     this.dom = dom;
@@ -11,142 +13,12 @@ class Player {
 
     this.balance;
     this.holeCards = [];
+    this.actionHistory = [];
 
     this.syncPlayerInfo();
   }
 
   // TODO: Get the player's position (e.g. "UTG", "UTG+1", "UTG+2", "MP", "MP+1", "MP+2", "CO", "BTN", "SB", "BB"):
-  // --------------------------------------------------
-
-  // TODO: Get a list of all player actions (e.g. "fold", "check", "call", "bet", "raise", "all-in", "sit out", "post SB", "post BB") and the time they were made (e.g. "1:23:45.678 PM") - for this, use the below HTML snippets as reference to build this:
-  //   <div style="transition: z-index 280ms ease 280ms; z-index: 0; opacity: 0.5;">
-  //    <div class="fbefu8h leftPlayer notZone" data-qa="playerTag" style="transition: height 280ms ease 0s, min-width 280ms ease 0s, border-radius 280ms ease 280ms, bottom 280ms ease 0s;">
-  //       <div class="f11rr7sf isNotMyPlayer">
-  //          <div class="fc6eh8u"><span class="fuj0xr0"><span class="fx8caj3">1</span></span></div>
-  //          <span class="f1n1diy1 balanceLargeSize" data-qa="playerBalance" style="transition: padding-right 280ms ease 0s;">396</span>
-  //       </div>
-  //       <div class="f1qjlmsw" style="opacity: 0; visibility: hidden; transition: opacity 133.333ms ease 0s, visibility 133.333ms ease 133.333ms;">
-  //          <div class="f1cb135w"><i class="icon-component icon-close2" style="color: rgb(255, 255, 255);"></i></div>
-  //          <button class="f17aq3f2 fmi6081 f1dfgz58 Desktop landscape f1vxdo2v" data-qa="button" style="font-size: 10px;">Sit here</button>
-  //          <div class="f68g4u1">
-  //             <textarea class="f10zqg8f" placeholder="Enter note"></textarea>
-  //             <div class="fq2pa6k">
-  //                ...
-  //             </div>
-  //          </div>
-  //       </div>
-  //       <div class="badgeHoverClass fj6hvda"><i class="icon-more"></i></div>
-  //    </div>
-  //    {/* IF FOLDED: */}
-  //    <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //       <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //          <div class="ffnz569 Desktop">FOLD</div>
-  //       </div>
-  //       <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //          <div class="ffnz569 Desktop">FOLD</div>
-  //       </div>
-  //    </div>
-  //    {/* IF SITTING OUT: */}
-  //    <div class="fl7wcok Desktop landscape leftPlayer notZone myPlayer" style="opacity: 1; max-height: 36px; transition: opacity 280ms ease 0ms, max-height 280ms ease 0ms, min-width 280ms ease, height 280ms ease;">
-  //         <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //             <div class="ffnz569 Desktop">SITTING OUT</div>
-  //         </div>
-  //         <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //             <div class="ffnz569 Desktop">SITTING OUT</div>
-  //         </div>
-  //     </div>
-  //    {/* IF ALL-IN: */}
-  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">ALL-IN</div>
-  //    </div>
-  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">ALL-IN</div>
-  //    </div>
-  // </div>
-  //    {/* IF RAISED: */}
-  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">RAISE</div>
-  //    </div>
-  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">RAISE</div>
-  //    </div>
-  // </div>
-  //    {/* IF HAS 7 SECONDS LEFT TO MAKE A MOVE: */}
-  /* <div class="fhjgz7a Desktop landscape leftPlayer notZone" style="opacity: 1; max-height: 36px; transition: opacity 280ms ease 0ms, max-height 280ms ease 0ms, min-width 280ms ease, height 280ms ease;">
-     <div class="f1qbx4ty Desktop landscape f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-        <div class="f16q1xs6">
-           <div class="f4xpy7w">7</div>
-           <div class="f1rujsv5 Desktop">
-              <div class="f1x2n444 standard Desktop" style="transform: translate(20%);"></div>
-           </div>
-        </div>
-     </div>
-     <div class="f1qbx4ty Desktop" style="opacity: 0; transition: opacity 600ms ease 0s;">
-        <div class="f16q1xs6">
-           <div class="f4xpy7w">8</div>
-           <div class="f1rujsv5 Desktop">
-              <div class="f1x2n444 standard Desktop" style="transform: translate(23%);"></div>
-           </div>
-        </div>
-     </div>
-  </div> */
-  //    {/* IF CHECKED: */}
-  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">CHECK</div>
-  //    </div>
-  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">CHECK</div>
-  //    </div>
-  // </div>
-  //    {/* IF BET: */}
-  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">BET</div>
-  //    </div>
-  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">BET</div>
-  //    </div>
-  // </div>
-  //    {/* IF CALLED: */}
-  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">CALL</div>
-  //    </div>
-  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">CALL</div>
-  //    </div>
-  // </div>
-  //    {/* IF FOLDED: */}
-  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">FOLD</div>
-  //    </div>
-  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">FOLD</div>
-  //    </div>
-  // </div>
-  //    {/* POST BB: */}
-  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">POST BB</div>
-  //    </div>
-  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">POST BB</div>
-  //    </div>
-  // </div>
-  //    {/* POST SB: */}
-  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">POST SB</div>
-  //    </div>
-  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-  //       <div class="ffnz569 Desktop">POST SB</div>
-  //    </div>
-  // </div>
-  // </div>
   // --------------------------------------------------
 
   // TODO: get if it's the player's turn to act:
@@ -242,13 +114,82 @@ class Player {
     return this.holeCards;
   }
 
-  syncPlayerInfo() {
-    function getPlayerInfo(self) {
-      self.getBalance();
-      self.getHoleCards();
+  // Get a list of all player actions (e.g. "FOLD", "CHECK", "CALL", "BET", "RAISE", "ALL-IN", "ALL-IN · x%", "SITTING OUT", "POST SB", "POST BB", "x seconds left to make a move...", "NEW PLAYER") along with the action's timestamp (e.g. "2021-01-01 00:00:00.000")
+  getCurrentAction() {
+    // To get the player's current action DOM:
+    // 1. Get the <div> tag with attribute "data-qa" with value "playerTag" or "myPlayerTag"
+    // 2. Get the parent <div> of that <div>
+    // 3. Get the first <div> tag within that <div> that does not have a "data-qa" attribute with a value of "playerTag" or "myPlayerTag" (don't check recursively, only check the first level of children)
+    const currentActionDOM = this.dom
+      .querySelector('div[data-qa="playerTag"], div[data-qa="myPlayerTag"]')
+      ?.parentNode?.querySelector(
+        ':scope > div:not([data-qa="playerTag"]):not([data-qa="myPlayerTag"])'
+      );
+    this.currentActionDOM = currentActionDOM;
+
+    // Check if the player's current action DOM exists
+    if (currentActionDOM) {
+      // To get the player's current action:
+      // 1. Within the player action DOM, there will be two <div> tags, one is has the opacity of 1 and the other has the opacity of 0, the one with opacity of 1 is the current player action
+      // 2. Get the innerText of the <div> tag with style opacity of 1 within the current player action DOM, this is the current player action (note: the style tag may have other styles, e.g. style="opacity: 1; transition: opacity 600ms ease 0s;", so we can't just check if the style tag equals "opacity: 1", we have to check if it contains "opacity: 1")
+      const currentAction = this.formatAction(
+        Array.from(currentActionDOM.querySelectorAll("div")).find(
+          (div) => div.style.opacity === "1"
+        )?.innerText
+      );
+
+      // Check if the player's current action is different from the previous action
+      if (
+        !currentAction ||
+        (this.actionHistory.length > 0 &&
+          this.actionHistory[this.actionHistory.length - 1].action ===
+            currentAction)
+      )
+        return;
+
+      // Create an action object
+      const action = {
+        action: currentAction,
+        timestamp: formatTimestamp(new Date()),
+      };
+
+      // Add the action object to the actionHistory array
+      this.actionHistory.push(action);
+      logMessage(
+        `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}${
+          this.isMyPlayer ? " - you" : ""
+        }): Action updated: ${action.action} (at ${action.timestamp})`,
+        {
+          color: this.isMyPlayer
+            ? "goldenrod"
+            : action.action.includes("seconds left to make a move...")
+            ? "lightgray"
+            : "lightblue",
+        }
+      );
     }
-    getPlayerInfo(this);
-    setInterval(() => getPlayerInfo(this), 100);
+
+    return this.actionHistory;
+  }
+
+  formatAction(action) {
+    return (
+      // Check if the action is just a number (e.g. "7" for "7 seconds left to make a move")
+      !isNaN(action) ? `${action} seconds left to make a move...` : action
+    );
+  }
+
+  getPlayerInfo() {
+    return {
+      balance: this.getBalance(),
+      holeCards: this.getHoleCards(),
+      actionHistory: this.getCurrentAction(),
+    };
+  }
+
+  syncPlayerInfo() {
+    this.getPlayerInfo();
+    setInterval(() => this.getPlayerInfo(), TICK_RATE);
   }
 }
 
@@ -457,16 +398,19 @@ class PokerTable {
     return this.sidePots;
   }
 
+  getTableInfo() {
+    return {
+      board: this.getBoard(),
+      players: this.getPlayers(),
+      totalPot: this.getTotalPot(),
+      mainPot: this.getMainPot(),
+      sidePots: this.getSidePots(),
+    };
+  }
+
   syncTableInfo() {
-    function getTableInfo(self) {
-      self.getBoard();
-      self.getPlayers();
-      self.getTotalPot();
-      self.getMainPot();
-      self.getSidePots();
-    }
-    getTableInfo(this);
-    setInterval(() => getTableInfo(this), 100);
+    this.getTableInfo();
+    setInterval(() => this.getTableInfo(), TICK_RATE);
   }
 }
 
@@ -589,4 +533,16 @@ function roundFloat(number, decimalPlaces = 2, forceDecimalPlaces = true) {
         maximumFractionDigits: decimalPlaces,
       })
     : parseFloat(number.toFixed(decimalPlaces));
+}
+
+function formatTimestamp(date) {
+  const yyyy = date.getFullYear();
+  const MM = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  const mmm = String(date.getMilliseconds()).padStart(3, "0");
+
+  return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}.${mmm}`;
 }
