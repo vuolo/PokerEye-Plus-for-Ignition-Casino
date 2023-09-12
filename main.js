@@ -1,134 +1,3 @@
-//   <div style="transition: z-index 280ms ease 280ms; z-index: 0; opacity: 0.5;">
-//    <div class="fbefu8h leftPlayer notZone" data-qa="playerTag" style="transition: height 280ms ease 0s, min-width 280ms ease 0s, border-radius 280ms ease 280ms, bottom 280ms ease 0s;">
-//       <div class="f11rr7sf isNotMyPlayer">
-//          <div class="fc6eh8u"><span class="fuj0xr0"><span class="fx8caj3">1</span></span></div>
-//          <span class="f1n1diy1 balanceLargeSize" data-qa="playerBalance" style="transition: padding-right 280ms ease 0s;">396</span>
-//       </div>
-//       <div class="f1qjlmsw" style="opacity: 0; visibility: hidden; transition: opacity 133.333ms ease 0s, visibility 133.333ms ease 133.333ms;">
-//          <div class="f1cb135w"><i class="icon-component icon-close2" style="color: rgb(255, 255, 255);"></i></div>
-//          <button class="f17aq3f2 fmi6081 f1dfgz58 Desktop landscape f1vxdo2v" data-qa="button" style="font-size: 10px;">Sit here</button>
-//          <div class="f68g4u1">
-//             <textarea class="f10zqg8f" placeholder="Enter note"></textarea>
-//             <div class="fq2pa6k">
-//                ...
-//             </div>
-//          </div>
-//       </div>
-//       <div class="badgeHoverClass fj6hvda"><i class="icon-more"></i></div>
-//    </div>
-//    {/* IF FOLDED: */}
-//    <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//       <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//          <div class="ffnz569 Desktop">FOLD</div>
-//       </div>
-//       <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//          <div class="ffnz569 Desktop">FOLD</div>
-//       </div>
-//    </div>
-//    {/* IF SITTING OUT: */}
-//    <div class="fl7wcok Desktop landscape leftPlayer notZone myPlayer" style="opacity: 1; max-height: 36px; transition: opacity 280ms ease 0ms, max-height 280ms ease 0ms, min-width 280ms ease, height 280ms ease;">
-//         <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//             <div class="ffnz569 Desktop">SITTING OUT</div>
-//         </div>
-//         <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//             <div class="ffnz569 Desktop">SITTING OUT</div>
-//         </div>
-//     </div>
-//    {/* IF ALL-IN: */}
-//   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">ALL-IN</div>
-//    </div>
-//    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">ALL-IN</div>
-//    </div>
-// </div>
-//    {/* IF RAISED: */}
-//   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">RAISE</div>
-//    </div>
-//    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">RAISE</div>
-//    </div>
-// </div>
-//    {/* IF HAS 7 SECONDS LEFT TO MAKE A MOVE: */}
-{
-  /* <div class="fhjgz7a Desktop landscape leftPlayer notZone" style="opacity: 1; max-height: 36px; transition: opacity 280ms ease 0ms, max-height 280ms ease 0ms, min-width 280ms ease, height 280ms ease;">
-   <div class="f1qbx4ty Desktop landscape f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-      <div class="f16q1xs6">
-         <div class="f4xpy7w">7</div>
-         <div class="f1rujsv5 Desktop">
-            <div class="f1x2n444 standard Desktop" style="transform: translate(20%);"></div>
-         </div>
-      </div>
-   </div>
-   <div class="f1qbx4ty Desktop" style="opacity: 0; transition: opacity 600ms ease 0s;">
-      <div class="f16q1xs6">
-         <div class="f4xpy7w">8</div>
-         <div class="f1rujsv5 Desktop">
-            <div class="f1x2n444 standard Desktop" style="transform: translate(23%);"></div>
-         </div>
-      </div>
-   </div>
-</div> */
-}
-//    {/* IF CHECKED: */}
-//   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">CHECK</div>
-//    </div>
-//    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">CHECK</div>
-//    </div>
-// </div>
-//    {/* IF BET: */}
-//   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">BET</div>
-//    </div>
-//    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">BET</div>
-//    </div>
-// </div>
-//    {/* IF CALLED: */}
-//   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">CALL</div>
-//    </div>
-//    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">CALL</div>
-//    </div>
-// </div>
-//    {/* IF FOLDED: */}
-//   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">FOLD</div>
-//    </div>
-//    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">FOLD</div>
-//    </div>
-// </div>
-//    {/* POST BB: */}
-//   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">POST BB</div>
-//    </div>
-//    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">POST BB</div>
-//    </div>
-// </div>
-//    {/* POST SB: */}
-//   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
-//    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">POST SB</div>
-//    </div>
-//    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
-//       <div class="ffnz569 Desktop">POST SB</div>
-//    </div>
-// </div>
-// </div>
-
 class Player {
   constructor(dom, seatNumber, tableSlotNumber) {
     this.dom = dom;
@@ -145,6 +14,152 @@ class Player {
 
     this.syncPlayerInfo();
   }
+
+  // TODO: Get the player's position (e.g. "UTG", "UTG+1", "UTG+2", "MP", "MP+1", "MP+2", "CO", "BTN", "SB", "BB"):
+  // --------------------------------------------------
+
+  // TODO: Get a list of all player actions (e.g. "fold", "check", "call", "bet", "raise", "all-in", "sit out", "post SB", "post BB") and the time they were made (e.g. "1:23:45.678 PM") - for this, use the below HTML snippets as reference to build this:
+  //   <div style="transition: z-index 280ms ease 280ms; z-index: 0; opacity: 0.5;">
+  //    <div class="fbefu8h leftPlayer notZone" data-qa="playerTag" style="transition: height 280ms ease 0s, min-width 280ms ease 0s, border-radius 280ms ease 280ms, bottom 280ms ease 0s;">
+  //       <div class="f11rr7sf isNotMyPlayer">
+  //          <div class="fc6eh8u"><span class="fuj0xr0"><span class="fx8caj3">1</span></span></div>
+  //          <span class="f1n1diy1 balanceLargeSize" data-qa="playerBalance" style="transition: padding-right 280ms ease 0s;">396</span>
+  //       </div>
+  //       <div class="f1qjlmsw" style="opacity: 0; visibility: hidden; transition: opacity 133.333ms ease 0s, visibility 133.333ms ease 133.333ms;">
+  //          <div class="f1cb135w"><i class="icon-component icon-close2" style="color: rgb(255, 255, 255);"></i></div>
+  //          <button class="f17aq3f2 fmi6081 f1dfgz58 Desktop landscape f1vxdo2v" data-qa="button" style="font-size: 10px;">Sit here</button>
+  //          <div class="f68g4u1">
+  //             <textarea class="f10zqg8f" placeholder="Enter note"></textarea>
+  //             <div class="fq2pa6k">
+  //                ...
+  //             </div>
+  //          </div>
+  //       </div>
+  //       <div class="badgeHoverClass fj6hvda"><i class="icon-more"></i></div>
+  //    </div>
+  //    {/* IF FOLDED: */}
+  //    <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //       <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //          <div class="ffnz569 Desktop">FOLD</div>
+  //       </div>
+  //       <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //          <div class="ffnz569 Desktop">FOLD</div>
+  //       </div>
+  //    </div>
+  //    {/* IF SITTING OUT: */}
+  //    <div class="fl7wcok Desktop landscape leftPlayer notZone myPlayer" style="opacity: 1; max-height: 36px; transition: opacity 280ms ease 0ms, max-height 280ms ease 0ms, min-width 280ms ease, height 280ms ease;">
+  //         <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //             <div class="ffnz569 Desktop">SITTING OUT</div>
+  //         </div>
+  //         <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //             <div class="ffnz569 Desktop">SITTING OUT</div>
+  //         </div>
+  //     </div>
+  //    {/* IF ALL-IN: */}
+  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">ALL-IN</div>
+  //    </div>
+  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">ALL-IN</div>
+  //    </div>
+  // </div>
+  //    {/* IF RAISED: */}
+  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">RAISE</div>
+  //    </div>
+  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">RAISE</div>
+  //    </div>
+  // </div>
+  //    {/* IF HAS 7 SECONDS LEFT TO MAKE A MOVE: */}
+  /* <div class="fhjgz7a Desktop landscape leftPlayer notZone" style="opacity: 1; max-height: 36px; transition: opacity 280ms ease 0ms, max-height 280ms ease 0ms, min-width 280ms ease, height 280ms ease;">
+     <div class="f1qbx4ty Desktop landscape f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+        <div class="f16q1xs6">
+           <div class="f4xpy7w">7</div>
+           <div class="f1rujsv5 Desktop">
+              <div class="f1x2n444 standard Desktop" style="transform: translate(20%);"></div>
+           </div>
+        </div>
+     </div>
+     <div class="f1qbx4ty Desktop" style="opacity: 0; transition: opacity 600ms ease 0s;">
+        <div class="f16q1xs6">
+           <div class="f4xpy7w">8</div>
+           <div class="f1rujsv5 Desktop">
+              <div class="f1x2n444 standard Desktop" style="transform: translate(23%);"></div>
+           </div>
+        </div>
+     </div>
+  </div> */
+  //    {/* IF CHECKED: */}
+  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">CHECK</div>
+  //    </div>
+  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">CHECK</div>
+  //    </div>
+  // </div>
+  //    {/* IF BET: */}
+  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">BET</div>
+  //    </div>
+  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">BET</div>
+  //    </div>
+  // </div>
+  //    {/* IF CALLED: */}
+  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">CALL</div>
+  //    </div>
+  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">CALL</div>
+  //    </div>
+  // </div>
+  //    {/* IF FOLDED: */}
+  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">FOLD</div>
+  //    </div>
+  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">FOLD</div>
+  //    </div>
+  // </div>
+  //    {/* POST BB: */}
+  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">POST BB</div>
+  //    </div>
+  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">POST BB</div>
+  //    </div>
+  // </div>
+  //    {/* POST SB: */}
+  //   <div class="f1xuecgj Desktop landscape leftPlayer notZone" style="opacity: 0; max-height: 0px; transition: opacity 280ms ease 300ms, max-height 280ms ease 900ms, min-width 280ms ease, height 280ms ease;">
+  //    <div class="f1qbx4ty Desktop landscape" style="opacity: 0; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">POST SB</div>
+  //    </div>
+  //    <div class="f1qbx4ty Desktop f1cwv3sl" style="opacity: 1; transition: opacity 600ms ease 0s;">
+  //       <div class="ffnz569 Desktop">POST SB</div>
+  //    </div>
+  // </div>
+  // </div>
+  // --------------------------------------------------
+
+  // TODO: get if it's the player's turn to act:
+  //   <div class="fghgvzm" style="top: 3px; height: 130px; width: 130px;">
+  //    <div class="f1jf43s6" style="animation: 1820ms linear 0ms infinite normal none running f493ozf;"></div>
+  //    <div class="f1jf43s6" style="animation: 1820ms linear -455ms infinite normal none running f493ozf;"></div>
+  //    <div class="f1jf43s6" style="animation: 1820ms linear -910ms infinite normal none running f493ozf;"></div>
+  //    <div class="f1jf43s6" style="animation: 1820ms linear -1365ms infinite normal none running f493ozf;"></div>
+  // </div>
+  // --------------------------------------------------
+
+  // TODO: get whether or not the player was dealt in:
+  // --------------------------------------------------
 
   getBalance() {
     const previousBalance = this.balance;
@@ -567,6 +582,11 @@ function clearAllIntervals() {
   }
 }
 
-function roundFloat(number, decimalPlaces = 2) {
-  return parseFloat(number.toFixed(decimalPlaces));
+function roundFloat(number, decimalPlaces = 2, forceDecimalPlaces = true) {
+  return forceDecimalPlaces
+    ? parseFloat(number.toFixed(decimalPlaces)).toLocaleString("en-US", {
+        minimumFractionDigits: decimalPlaces,
+        maximumFractionDigits: decimalPlaces,
+      })
+    : parseFloat(number.toFixed(decimalPlaces));
 }
