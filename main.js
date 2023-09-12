@@ -3,32 +3,37 @@ class PokerTable {
     this.iframe = iframe;
     this.index = index;
     this.board = [];
+    this.holeCards = [];
     this.init();
   }
 
   init() {
     this.doc = this.iframe.contentWindow?.document;
-    this.getBoard();
-    this.syncBoard();
+    try {
+      this.getBoard();
+      this.getHoleCards();
+      this.syncBoard();
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   getBoard() {
     // To get the board DOM:
     // 1. Get the first <img> with src starting with "./static/media/bkg-table-"
     // 2. Get the parent <div> of that <img>
-    // 3. Get the first <svg> tag within that <div> and all of its children that has an attribute of "data-qa" with a value that starts with "card-" and does not equal "card-placeholder"
+    // 3. Get the first <svg> tag within that <div> and all of its children that has an attribute of "data-qa" with a value that starts with "card" and does not equal "card-placeholder"
     // 4. Get the 4th-level parent <div> of that <svg>, that's the board DOM
-    if (!this.boardDOM)
-      this.boardDOM = Array.from(
-        this.doc
-          ?.querySelector('img[src^="./static/media/bkg-table-"]')
-          ?.parentNode?.querySelectorAll('svg[data-qa^="card"]') || []
-      ).filter(
-        (node) => node.getAttribute("data-qa") !== "card-placeholder"
-      )[0]?.parentNode?.parentNode?.parentNode?.parentNode;
+    this.boardDOM = Array.from(
+      this.doc
+        ?.querySelector('img[src^="./static/media/bkg-table-"]')
+        ?.parentNode?.querySelectorAll('svg[data-qa^="card"]') || []
+    ).filter(
+      (node) => node.getAttribute("data-qa") !== "card-placeholder"
+    )[0]?.parentNode?.parentNode?.parentNode?.parentNode;
 
     // To get the board:
-    // 1. Get all <svg> tags within the board DOM that has an attribute of "data-qa" with a value that starts with "card-"
+    // 1. Get all <svg> tags within the board DOM that has an attribute of "data-qa" with a value that starts with "card"
     // 2. Get the "data-qa" attribute value of each <svg> tag
     // 3. Filter out all empty/placeholder cards (this is when the <svg> tag's "data-qa" attribute value equals "card-1")
     // 4. Remove all duplicate cards (by removing all duplicate "data-qa" attribute values from the <svg> tags)
@@ -40,7 +45,8 @@ class PokerTable {
       .filter((card) => card !== "card-1")
       // Remove duplicate cards
       .filter((card, index, cards) => cards.indexOf(card) === index)
-      .map((card) => formatCard(card));
+      .map((card) => formatCard(card))
+      .filter((card) => card !== null);
 
     // Update the board if it has changed
     if (JSON.stringify(newBoard) !== JSON.stringify(this.board)) {
@@ -61,8 +67,57 @@ class PokerTable {
     return this.board;
   }
 
+  getHoleCards() {
+    // To get hole cards DOM:
+    // 1. Get all <div> tags with attribute "data-qa" with value of "holeCards"
+    // 2. Now, for each of the <div> tags we got in step 1, get all <svg> tags that has an attribute of "data-qa" with a value that starts with "card"
+    const holeCardsDOM = Array.from(
+      Array.from(
+        this.doc?.querySelectorAll('div[data-qa="holeCards"]') || []
+      ).map((div) => div.querySelectorAll('svg[data-qa^="card"]')) || []
+    )
+      .map((innerNodeList) => Array.from(innerNodeList))
+      .flat();
+    this.holeCardsDOM = holeCardsDOM;
+
+    // To get hole cards:
+    // 1. Get the "data-qa" attribute value of each <svg> tag
+    // 2. Filter out all empty/placeholder cards (this is when the <svg> tag's "data-qa" attribute value equals "card-1")
+    // 3. Remove all duplicate cards (by removing all duplicate "data-qa" attribute values from the <svg> tags)
+    const newHoleCards = holeCardsDOM
+      .map((svg) => svg.getAttribute("data-qa"))
+      .filter((card) => card !== "card-1")
+      .filter((card, index, cards) => cards.indexOf(card) === index)
+      .map((card) => formatCard(card))
+      .filter((card) => card !== null);
+
+    // Update the hole cards if they have changed
+    if (JSON.stringify(newHoleCards) !== JSON.stringify(this.holeCards)) {
+      this.holeCards = newHoleCards;
+      if (this.holeCards.length === 0)
+        logMessage(
+          `The hole cards have been cleared on table #${this.index + 1}`,
+          {
+            color: "lightblue",
+          }
+        );
+      else
+        logMessage(
+          `The hole cards have been updated on table #${
+            this.index + 1
+          }: ${this.holeCards.map((card) => `[${card}]`).join(" ")}`,
+          { color: "lightblue" }
+        );
+    }
+
+    return this.holeCards;
+  }
+
   syncBoard() {
-    setInterval(() => this.getBoard(), 100);
+    setInterval(() => {
+      this.getBoard();
+      this.getHoleCards();
+    }, 100);
   }
 }
 
@@ -75,16 +130,17 @@ class PokerTable {
 // ah = 26, 2h = 27, 3h = 28, 4h = 29, 5h = 30, 6h = 31, 7h = 32, 8h = 33, 9h = 34, 10h = 35, jh = 36, qh = 37, kh = 38
 // as = 39, 2s = 40, 3s = 41, 4s = 42, 5s = 43, 6s = 44, 7s = 45, 8s = 46, 9s = 47, 10s = 48, js = 49, qs = 50, ks = 51
 const formatCard = (unformattedCard) => {
-  const numbers = unformattedCard.match(/\d+/g);
-  return numbers?.map((num) => {
-    const number = parseInt(num);
-    const suit = Math.floor(number / 13);
-    return `${
-      ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"][
-        number % 13
-      ]
-    }${"cdhs"[suit]}`;
-  });
+  const number = parseInt(unformattedCard.match(/\d+/g)[0]);
+
+  // Make sure the number is valid
+  if (isNaN(number) || number > 51) return null;
+
+  const suit = Math.floor(number / 13);
+  return `${
+    ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"][
+      number % 13
+    ]
+  }${"cdhs"[suit]}`;
 };
 
 // Initialize a Map to store all poker tables
@@ -131,6 +187,15 @@ const getTableSlotIFrames = () =>
 const getMultitableSlot = (iframe) =>
   parseInt(iframe.getAttribute("data-multitableslot"));
 
+// Exit the script
+function exit() {
+  clearAllIntervals();
+  pokerTables.clear();
+  logMessage("Now exiting PokerEye+ (Plus) for Ignition Casino...", {
+    color: "crimson",
+  });
+}
+
 // Main function (self-invoking)
 const main = (function main() {
   syncPokerTableSlots();
@@ -155,4 +220,16 @@ function logMessage(
     `color: ${color}; background: ${background}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle};`,
     `[PokerEye+]: ${message}`
   );
+}
+
+// Utility function to clear all timeouts/intervals created by the script
+function clearAllIntervals() {
+  // Get a reference to the last interval + 1
+  const interval_id = window.setInterval(function () {},
+  Number.MAX_SAFE_INTEGER);
+
+  // Clear any timeout/interval up to that id
+  for (let i = 1; i < interval_id; i++) {
+    window.clearInterval(i);
+  }
 }
