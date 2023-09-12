@@ -189,6 +189,7 @@ class Player {
   }
 
   init() {
+    this.isMyPlayer = this.dom.classList.contains("myPlayer");
     this.syncPlayerInfo();
   }
 
@@ -208,16 +209,16 @@ class Player {
     // Log the balance if it has changed
     if (previousBalance !== this.balance)
       logMessage(
-        `(Table #${this.tableSlotNumber}, Seat #${
-          this.seatNumber
-        }) New balance: $${this.balance}${
+        `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}${
+          this.isMyPlayer ? " - you" : ""
+        }): New balance: $${this.balance}${
           previousBalance !== undefined
             ? ` (net: $${roundFloat(
                 this.balance - previousBalance
               )}, previous: $${previousBalance})`
             : ""
         }`,
-        { color: "lightgray" }
+        { color: this.isMyPlayer ? "goldenrod" : "lightgray" }
       );
 
     return this.balance;
@@ -252,19 +253,21 @@ class Player {
       this.holeCards = newHoleCards;
       if (this.holeCards.length === 0)
         logMessage(
-          `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}): The player's hole cards have been cleared.`,
+          `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}${
+            this.isMyPlayer ? " - you" : ""
+          }): The player's hole cards have been cleared.`,
           {
-            color: "lightblue",
+            color: this.isMyPlayer ? "goldenrod" : "lightblue",
           }
         );
       else
         logMessage(
-          `(Table #${this.tableSlotNumber}, Seat #${
-            this.seatNumber
+          `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}${
+            this.isMyPlayer ? " - you" : ""
           }): Hole cards: ${this.holeCards
             .map((card) => `[${card}]`)
             .join(" ")}`,
-          { color: "lightblue" }
+          { color: this.isMyPlayer ? "goldenrod" : "lightblue" }
         );
     }
 
@@ -456,10 +459,10 @@ function assignNewPokerTableSlots(iframes = getTableSlotIFrames()) {
   for (const iframe of iframes) {
     const slotNumber = getMultitableSlot(iframe);
     if (slotNumber !== 0 && !pokerTables.has(slotNumber)) {
-      pokerTables.set(slotNumber, new PokerTable(iframe, slotNumber));
-      logMessage(`A new poker table has been detected (slot #${slotNumber}")`, {
+      logMessage(`(Table #${slotNumber}): Table opened.`, {
         color: "limegreen",
       });
+      pokerTables.set(slotNumber, new PokerTable(iframe, slotNumber));
     }
   }
 }
@@ -469,7 +472,7 @@ function removeClosedPokerTableSlots(iframes = getTableSlotIFrames()) {
   for (const slotNumber of pokerTables.keys()) {
     if (!iframes.some((iframe) => getMultitableSlot(iframe) === slotNumber)) {
       pokerTables.delete(slotNumber);
-      logMessage(`A poker table has been closed (slot #${slotNumber})`, {
+      logMessage(`(Table #${slotNumber}): Table closed.`, {
         color: "red",
       });
     }
@@ -484,16 +487,18 @@ const getMultitableSlot = (iframe) =>
   parseInt(iframe.getAttribute("data-multitableslot")) + 1;
 
 // Exit the script
-function exit() {
+function exit(silent = false) {
   clearAllIntervals();
   pokerTables.clear();
-  logMessage("Now exiting PokerEye+ (Plus) for Ignition Casino...", {
-    color: "crimson",
-  });
+  if (!silent)
+    logMessage("Now exiting PokerEye+ (Plus) for Ignition Casino...", {
+      color: "crimson",
+    });
 }
 
 // Main function (self-invoking)
 const main = (function main() {
+  exit(true);
   syncPokerTableSlots();
   setInterval(syncPokerTableSlots, 1000);
   return main;
