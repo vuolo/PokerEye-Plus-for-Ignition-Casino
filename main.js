@@ -968,6 +968,8 @@ const main = (function main() {
 
 // Exit the script
 function exit(silent = false) {
+  clearAllIntervals();
+
   // Stop syncing the poker table slots
   clearInterval(syncPokerTableSlotsInterval);
 
@@ -978,8 +980,6 @@ function exit(silent = false) {
   }
 
   pokerTables.clear();
-
-  // Force clear all timeouts/intervals created by the script
   clearAllIntervals();
 
   if (!silent)
