@@ -58,8 +58,8 @@ class Player {
         `${this.logMessagePrefix}Balance updated: $${roundFloat(this.balance)}${
           previousBalance !== undefined
             ? ` (net: $${roundFloat(
-                this.balance - previousBalance
-              )}, previous: $${roundFloat(previousBalance)})`
+                this.balance - (previousBalance || 0)
+              )}, previous: $${roundFloat(previousBalance || 0)})`
             : ""
         }`,
         { color: this.isMyPlayer ? "goldenrod" : "lightgray" }
@@ -180,11 +180,19 @@ class Player {
   }
 
   getPlayerInfo() {
-    return {
-      balance: this.getBalance(),
-      holeCards: this.getHoleCards(),
-      actionHistory: this.getCurrentAction(),
-    };
+    try {
+      return {
+        balance: this.getBalance(),
+        holeCards: this.getHoleCards(),
+        actionHistory: this.getCurrentAction(),
+      };
+    } catch (error) {
+      logMessage(
+        `${this.logMessagePrefix}Error getting player info: ${error}`,
+        { color: "red" }
+      );
+      console.error(error);
+    }
   }
 
   syncPlayerInfo() {
@@ -289,7 +297,7 @@ class PokerTable {
       if (!this.players.has(seatNumber) && !this.isSeatVacant(seatDOM)) {
         logMessage(
           `${this.logMessagePrefix}A player has joined seat #${seatNumber}.`,
-          { color: "orange" }
+          { color: "salmon" }
         );
         this.players.set(seatNumber, new Player(seatDOM, seatNumber, this));
       }
@@ -304,7 +312,7 @@ class PokerTable {
         this.players.delete(seatNumber);
         logMessage(
           `${this.logMessagePrefix}A player has left seat #${seatNumber}.`,
-          { color: "orange" }
+          { color: "salmon" }
         );
       }
     }
@@ -348,8 +356,8 @@ class PokerTable {
         `${this.logMessagePrefix}Total pot updated: $${roundFloat(totalPot)}${
           this.totalPot !== undefined
             ? ` (net: $${roundFloat(
-                totalPot - this.totalPot
-              )}, previous: $${roundFloat(this.totalPot)})`
+                totalPot - (this.totalPot || 0)
+              )}, previous: $${roundFloat(this.totalPot || 0)})`
             : ""
         }`,
         { color: "mediumseagreen" }
@@ -372,8 +380,8 @@ class PokerTable {
         `${this.logMessagePrefix}Main pot updated: $${roundFloat(mainPot)}${
           this.mainPot !== undefined
             ? ` (net: $${roundFloat(
-                mainPot - this.mainPot
-              )}, previous: $${roundFloat(this.mainPot)})`
+                mainPot - (this.mainPot || 0)
+              )}, previous: $${roundFloat(this.mainPot || 0)})`
             : ""
         }`,
         { color: "mediumseagreen" }
@@ -401,7 +409,7 @@ class PokerTable {
               `(#${potIndex + 1}) $${roundFloat(pot)}${
                 this.sidePots !== undefined
                   ? ` (net: $${roundFloat(
-                      pot - this.sidePots[potIndex]
+                      pot - (this.sidePots[potIndex] || 0)
                     )}, previous: $${roundFloat(this.sidePots[potIndex] || 0)})`
                   : ""
               }`
@@ -463,7 +471,7 @@ class PokerTable {
         curPlayer.position = "BTN";
         logMessage(
           `${curPlayer.logMessagePrefix}Position updated: ${curPlayer.position}`,
-          { color: curPlayer.isMyPlayer ? "goldenrod" : "lightblue" }
+          { color: curPlayer.isMyPlayer ? "goldenrod" : "plum" }
         );
       }
 
@@ -618,7 +626,7 @@ class PokerTable {
           logMessage(
             `${player.logMessagePrefix}Position updated: ${player.position}`,
             {
-              color: player.isMyPlayer ? "goldenrod" : "lightblue",
+              color: player.isMyPlayer ? "goldenrod" : "plum",
             }
           );
         }
@@ -640,13 +648,20 @@ class PokerTable {
   }
 
   getTableInfo() {
-    return {
-      board: this.getBoard(),
-      players: this.getPlayers(),
-      totalPot: this.getTotalPot(),
-      mainPot: this.getMainPot(),
-      sidePots: this.getSidePots(),
-    };
+    try {
+      return {
+        board: this.getBoard(),
+        players: this.getPlayers(),
+        totalPot: this.getTotalPot(),
+        mainPot: this.getMainPot(),
+        sidePots: this.getSidePots(),
+      };
+    } catch (error) {
+      logMessage(`${this.logMessagePrefix}Error getting table info: ${error}`, {
+        color: "red",
+      });
+      console.error(error);
+    }
   }
 
   syncTableInfo(runInstantly = true) {
