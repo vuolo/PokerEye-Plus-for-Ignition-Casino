@@ -28,7 +28,7 @@ function displayAttribution() {
     "color: magenta; font-size: 1.5em; background: black; font-weight: bold;",
     `${SOFTWARE_NAME} v${SOFTWARE_VERSION}\n`,
     "color: magenta; font-size: 1.2em; background: black; font-style: italic;",
-    `\nEngineered by ${AUTHOR}`
+    `\nby ${AUTHOR}`
   );
 }
 

@@ -1,25 +1,29 @@
 const TICK_RATE = 100; // ms
+const LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE = false;
 
 class Player {
-  constructor(dom, seatNumber, tableSlotNumber) {
+  constructor(dom, seatNumber, parentTable) {
     this.dom = dom;
     this.seatNumber = seatNumber;
-    this.tableSlotNumber = tableSlotNumber;
+    this.parentTable = parentTable;
+
     this.init();
   }
 
   init() {
     this.isMyPlayer = this.dom.classList.contains("myPlayer");
 
-    this.balance;
+    this.balance = undefined;
     this.holeCards = [];
     this.actionHistory = [];
+    this.position = null;
+
+    this.logMessagePrefix = `(Table #${this.parentTable.slotNumber}, Seat #${
+      this.seatNumber
+    }${this.isMyPlayer ? " - you" : ""}): `;
 
     this.syncPlayerInfo();
   }
-
-  // TODO: Get the player's position (e.g. "UTG", "UTG+1", "UTG+2", "MP", "MP+1", "MP+2", "CO", "BTN", "SB", "BB"):
-  // --------------------------------------------------
 
   // TODO: get if it's the player's turn to act:
   //   <div class="fghgvzm" style="top: 3px; height: 130px; width: 130px;">
@@ -28,6 +32,8 @@ class Player {
   //    <div class="f1jf43s6" style="animation: 1820ms linear -910ms infinite normal none running f493ozf;"></div>
   //    <div class="f1jf43s6" style="animation: 1820ms linear -1365ms infinite normal none running f493ozf;"></div>
   // </div>
+  // OR:
+  // Check if the last action is "x seconds left to make a move..."
   // --------------------------------------------------
 
   // TODO: get whether or not the player was dealt in:
@@ -37,21 +43,19 @@ class Player {
     const previousBalance = this.balance;
 
     // To get the player balance:
-    // 1. Get the innerText of the <span> tag with attribute "data-qa" with value "playerBalance"
-    // 2. Parse the balance text to a number and store it in a new Player instance
-    // Note: These values are formatted in the "x,xxx.xx" format (e.g."2,224.37"), but whenever the value has no decimal places, the format is "x,xxx" (e.g. "1,963")
+    //  1. Get the innerText of the <span> tag with attribute "data-qa" with value "playerBalance"
+    //  2. Parse the balance text to a number and store it in a new Player instance
+    //   Note: These values are formatted in the "x,xxx.xx" format (e.g."2,224.37"), but whenever the value has no decimal places, the format is "x,xxx" (e.g. "1,963")
     const balanceText = this.dom.querySelector(
       'span[data-qa="playerBalance"]'
     )?.innerText;
-    const balance = parseFloat(balanceText.replace(/[$,]/g, ""));
+    const balance = parseCurrency(balanceText);
     this.balance = balance;
 
     // Log the balance if it has changed
     if (previousBalance !== this.balance)
       logMessage(
-        `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}${
-          this.isMyPlayer ? " - you" : ""
-        }): Balance updated: $${roundFloat(this.balance)}${
+        `${this.logMessagePrefix}Balance updated: $${roundFloat(this.balance)}${
           previousBalance !== undefined
             ? ` (net: $${roundFloat(
                 this.balance - previousBalance
@@ -66,8 +70,8 @@ class Player {
 
   getHoleCards() {
     // To get hole cards DOM:
-    // 1. Get all <div> tags with attribute "data-qa" with value of "holeCards"
-    // 2. Now, for each of the <div> tags we got in step 1, get all <svg> tags that has an attribute of "data-qa" with a value that starts with "card"
+    //  1. Get all <div> tags with attribute "data-qa" with value of "holeCards"
+    //  2. Now, for each of the <div> tags we got in step 1, get all <svg> tags that has an attribute of "data-qa" with a value that starts with "card"
     const holeCardsDOM = Array.from(
       Array.from(
         this.dom.querySelectorAll('div[data-qa="holeCards"]') || []
@@ -78,9 +82,9 @@ class Player {
     this.holeCardsDOM = holeCardsDOM;
 
     // To get hole cards:
-    // 1. Get the "data-qa" attribute value of each <svg> tag
-    // 2. Filter out all empty/placeholder cards (this is when the <svg> tag's "data-qa" attribute value equals "card-1")
-    // 3. Remove all duplicate cards (by removing all duplicate "data-qa" attribute values from the <svg> tags)
+    //  1. Get the "data-qa" attribute value of each <svg> tag
+    //  2. Filter out all empty/placeholder cards (this is when the <svg> tag's "data-qa" attribute value equals "card-1")
+    //  3. Remove all duplicate cards (by removing all duplicate "data-qa" attribute values from the <svg> tags)
     const newHoleCards = holeCardsDOM
       .map((svg) => svg.getAttribute("data-qa"))
       .filter((card) => card !== "card-1")
@@ -92,19 +96,12 @@ class Player {
     if (JSON.stringify(newHoleCards) !== JSON.stringify(this.holeCards)) {
       this.holeCards = newHoleCards;
       if (this.holeCards.length === 0)
-        logMessage(
-          `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}${
-            this.isMyPlayer ? " - you" : ""
-          }): The player's hole cards have been cleared.`,
-          {
-            color: this.isMyPlayer ? "goldenrod" : "lightblue",
-          }
-        );
+        logMessage(`${this.logMessagePrefix}Hole cards have been cleared.`, {
+          color: this.isMyPlayer ? "goldenrod" : "lightblue",
+        });
       else
         logMessage(
-          `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}${
-            this.isMyPlayer ? " - you" : ""
-          }): Hole cards: ${this.holeCards
+          `${this.logMessagePrefix}Hole cards: ${this.holeCards
             .map((card) => `[${card}]`)
             .join(" ")}`,
           { color: this.isMyPlayer ? "goldenrod" : "lightblue" }
@@ -114,12 +111,12 @@ class Player {
     return this.holeCards;
   }
 
-  // Get a list of all player actions (e.g. "FOLD", "CHECK", "CALL", "BET", "RAISE", "ALL-IN", "ALL-IN · x%", "SITTING OUT", "POST SB", "POST BB", "x seconds left to make a move...", "NEW PLAYER") along with the action's timestamp (e.g. "2021-01-01 00:00:00.000")
+  // Get a list of all player actions (e.g. "FOLD", "CHECK", "CALL", "BET", "RAISE", "ALL-IN", "ALL-IN · x%", "SITTING OUT", "POST SB", "POST BB", "x seconds left to make a move...", "NEW PLAYER", "DONT SHOW") along with the action's timestamp (e.g. "2021-01-01 00:00:00.000")
   getCurrentAction() {
     // To get the player's current action DOM:
-    // 1. Get the <div> tag with attribute "data-qa" with value "playerTag" or "myPlayerTag"
-    // 2. Get the parent <div> of that <div>
-    // 3. Get the first <div> tag within that <div> that does not have a "data-qa" attribute with a value of "playerTag" or "myPlayerTag" (don't check recursively, only check the first level of children)
+    //  1. Get the <div> tag with attribute "data-qa" with value "playerTag" or "myPlayerTag"
+    //  2. Get the parent <div> of that <div>
+    //  3. Get the first <div> tag within that <div> that does not have a "data-qa" attribute with a value of "playerTag" or "myPlayerTag" (don't check recursively, only check the first level of children)
     const currentActionDOM = this.dom
       .querySelector('div[data-qa="playerTag"], div[data-qa="myPlayerTag"]')
       ?.parentNode?.querySelector(
@@ -130,8 +127,8 @@ class Player {
     // Check if the player's current action DOM exists
     if (currentActionDOM) {
       // To get the player's current action:
-      // 1. Within the player action DOM, there will be two <div> tags, one is has the opacity of 1 and the other has the opacity of 0, the one with opacity of 1 is the current player action
-      // 2. Get the innerText of the <div> tag with style opacity of 1 within the current player action DOM, this is the current player action (note: the style tag may have other styles, e.g. style="opacity: 1; transition: opacity 600ms ease 0s;", so we can't just check if the style tag equals "opacity: 1", we have to check if it contains "opacity: 1")
+      //  1. Within the player action DOM, there will be two <div> tags, one is has the opacity of 1 and the other has the opacity of 0, the one with opacity of 1 is the current player action
+      //  2. Get the innerText of the <div> tag with style opacity of 1 within the current player action DOM, this is the current player action (note: the style tag may have other styles, e.g. style="opacity: 1; transition: opacity 600ms ease 0s;", so we can't just check if the style tag equals "opacity: 1", we have to check if it contains "opacity: 1")
       const currentAction = this.formatAction(
         Array.from(currentActionDOM.querySelectorAll("div")).find(
           (div) => div.style.opacity === "1"
@@ -155,18 +152,21 @@ class Player {
 
       // Add the action object to the actionHistory array
       this.actionHistory.push(action);
-      logMessage(
-        `(Table #${this.tableSlotNumber}, Seat #${this.seatNumber}${
-          this.isMyPlayer ? " - you" : ""
-        }): Action updated: ${action.action} (at ${action.timestamp})`,
-        {
-          color: this.isMyPlayer
-            ? "goldenrod"
-            : action.action.includes("seconds left to make a move...")
-            ? "lightgray"
-            : "lightblue",
-        }
-      );
+      if (
+        LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE ||
+        !action.action.includes("seconds left to make a move...")
+      ) {
+        logMessage(
+          `${this.logMessagePrefix}> ${action.action} (at ${action.timestamp})`,
+          {
+            color: this.isMyPlayer
+              ? "goldenrod"
+              : action.action.includes("seconds left to make a move...")
+              ? "lightgray"
+              : "lightblue",
+          }
+        );
+      }
     }
 
     return this.actionHistory;
@@ -189,7 +189,14 @@ class Player {
 
   syncPlayerInfo() {
     this.getPlayerInfo();
-    setInterval(() => this.getPlayerInfo(), TICK_RATE);
+    this.syncPlayerInfoInterval = setInterval(
+      () => this.getPlayerInfo(),
+      TICK_RATE
+    );
+  }
+
+  stopSyncingPlayerInfo() {
+    clearInterval(this.syncPlayerInfoInterval);
   }
 }
 
@@ -197,6 +204,7 @@ class PokerTable {
   constructor(iframe, slotNumber) {
     this.iframe = iframe;
     this.slotNumber = slotNumber;
+
     this.init();
   }
 
@@ -206,19 +214,21 @@ class PokerTable {
     this.board = [];
     this.players = new Map();
 
-    this.totalPot;
-    this.mainPot;
+    this.totalPot = undefined;
+    this.mainPot = undefined;
     this.sidePots = [];
+
+    this.logMessagePrefix = `(Table #${this.slotNumber}): `;
 
     this.syncTableInfo();
   }
 
   getBoard() {
     // To get the table DOM:
-    // 1. Get the first <img> with src starting with "./static/media/bkg-table-"
-    // 2. Get the parent <div> of that <img>
-    // 3. Get the first <svg> tag within that <div> and all of its children that has an attribute of "data-qa" with a value that starts with "card" and does not equal "card-placeholder"
-    // 4. Get the 4th-level parent <div> of that <svg>, that's the table DOM
+    //  1. Get the first <img> with src starting with "./static/media/bkg-table-"
+    //  2. Get the parent <div> of that <img>
+    //  3. Get the first <svg> tag within that <div> and all of its children that has an attribute of "data-qa" with a value that starts with "card" and does not equal "card-placeholder"
+    //  4. Get the 4th-level parent <div> of that <svg>, that's the table DOM
     this.tableDOM = Array.from(
       this.doc
         ?.querySelector('img[src^="./static/media/bkg-table-"]')
@@ -228,10 +238,10 @@ class PokerTable {
     )[0]?.parentNode?.parentNode?.parentNode?.parentNode;
 
     // To get the board:
-    // 1. Get all <svg> tags within the table DOM that has an attribute of "data-qa" with a value that starts with "card"
-    // 2. Get the "data-qa" attribute value of each <svg> tag
-    // 3. Filter out all empty/placeholder cards (this is when the <svg> tag's "data-qa" attribute value equals "card-1")
-    // 4. Remove all duplicate cards (by removing all duplicate "data-qa" attribute values from the <svg> tags)
+    //  1. Get all <svg> tags within the table DOM that has an attribute of "data-qa" with a value that starts with "card"
+    //  2. Get the "data-qa" attribute value of each <svg> tag
+    //  3. Filter out all empty/placeholder cards (this is when the <svg> tag's "data-qa" attribute value equals "card-1")
+    //  4. Remove all duplicate cards (by removing all duplicate "data-qa" attribute values from the <svg> tags)
     const newBoard = Array.from(
       this.tableDOM?.querySelectorAll('svg[data-qa^="card"]') || []
     )
@@ -247,12 +257,12 @@ class PokerTable {
     if (JSON.stringify(newBoard) !== JSON.stringify(this.board)) {
       this.board = newBoard;
       if (this.board.length === 0)
-        logMessage(`(Table #${this.slotNumber}): The board has been cleared.`, {
+        logMessage(`${this.logMessagePrefix}The board has been cleared.`, {
           color: "lightblue",
         });
       else
         logMessage(
-          `(Table #${this.slotNumber}): The board has been updated. ${this.board
+          `${this.logMessagePrefix}The board has been updated. ${this.board
             .map((card) => `[${card}]`)
             .join(" ")}`,
           { color: "lightblue" }
@@ -266,7 +276,7 @@ class PokerTable {
     const previousPlayersSize = this.players.size;
 
     // To get all players DOM:
-    // 1. Get all <div> tags with attribute "data-qa" with a value that starts with "playerContainer-"
+    //  1. Get all <div> tags with attribute "data-qa" with a value that starts with "playerContainer-"
     const playersSeatDOMs = Array.from(
       this.doc?.querySelectorAll('div[data-qa^="playerContainer-"]') || []
     );
@@ -277,13 +287,10 @@ class PokerTable {
       const seatNumber = this.getSeatNumber(seatDOM);
       if (!this.players.has(seatNumber) && !this.isSeatVacant(seatDOM)) {
         logMessage(
-          `(Table #${this.slotNumber}): A player has joined seat #${seatNumber}.`,
+          `${this.logMessagePrefix}A player has joined seat #${seatNumber}.`,
           { color: "lightgray" }
         );
-        this.players.set(
-          seatNumber,
-          new Player(seatDOM, seatNumber, this.slotNumber)
-        );
+        this.players.set(seatNumber, new Player(seatDOM, seatNumber, this));
       }
     }
 
@@ -295,7 +302,7 @@ class PokerTable {
       ) {
         this.players.delete(seatNumber);
         logMessage(
-          `(Table #${this.slotNumber}): A player has left seat #${seatNumber}.`,
+          `${this.logMessagePrefix}A player has left seat #${seatNumber}.`,
           { color: "lightgray" }
         );
       }
@@ -304,9 +311,7 @@ class PokerTable {
     // Log the other players if they have changed
     if (previousPlayersSize !== this.players.size) {
       logMessage(
-        `(Table #${this.slotNumber}): Players: ${Array.from(
-          this.players.values()
-        )
+        `${this.logMessagePrefix}Players: ${Array.from(this.players.values())
           .map(
             (player) => `(#${player.seatNumber}) $${roundFloat(player.balance)}`
           )
@@ -315,7 +320,7 @@ class PokerTable {
       );
     }
 
-    return this.players;
+    return this.updatePlayerPositions();
   }
 
   getSeatNumber(seatDOM) {
@@ -324,7 +329,7 @@ class PokerTable {
 
   isSeatVacant(seatDOM) {
     // To check if a seat is vacant:
-    // 1. Check if there is a <div> with attribute "data-qa" with a value of "player-empty-seat-panel"
+    //  1. Check if there is a <div> with attribute "data-qa" with a value of "player-empty-seat-panel"
     return (
       seatDOM.querySelector('div[data-qa="player-empty-seat-panel"]') !== null
     );
@@ -334,15 +339,13 @@ class PokerTable {
     const totalPotText = this.doc.querySelector(
       'span[data-qa="totalPot"]'
     )?.innerText;
-    const totalPot = totalPotText
-      ? parseFloat(totalPotText.replace(/[$,]/g, ""))
-      : undefined;
+    const totalPot = totalPotText ? parseCurrency(totalPotText) : undefined;
 
     // Update the total pot if it has changed
     if (totalPot !== undefined && this.totalPot !== totalPot) {
       this.totalPot = totalPot;
       logMessage(
-        `(Table #${this.slotNumber}): Total pot updated: $${roundFloat(
+        `${this.logMessagePrefix}Total pot updated: $${roundFloat(
           this.totalPot
         )}`,
         { color: "lightblue" }
@@ -356,15 +359,13 @@ class PokerTable {
     const mainPotText = this.doc.querySelector(
       'span[data-qa="totalPot-0"]'
     )?.innerText;
-    const mainPot = mainPotText
-      ? parseFloat(mainPotText.replace(/[$,]/g, ""))
-      : undefined;
+    const mainPot = mainPotText ? parseCurrency(mainPotText) : undefined;
 
     // Update the main pot if it has changed
     if (mainPot !== undefined && this.mainPot !== mainPot) {
       this.mainPot = mainPot;
       logMessage(
-        `(Table #${this.slotNumber}): Main pot updated: $${roundFloat(
+        `${this.logMessagePrefix}Main pot updated: $${roundFloat(
           this.mainPot
         )}`,
         { color: "lightblue" }
@@ -380,15 +381,13 @@ class PokerTable {
     )
       // Exclude the main pot from the side pots
       .filter((span) => span.getAttribute("data-qa") !== "totalPot-0");
-    const sidePots = sidePotsDOM.map((span) =>
-      parseFloat(span.innerText.replace(/[$,]/g, ""))
-    );
+    const sidePots = sidePotsDOM.map((span) => parseCurrency(span.innerText));
 
     // Update the side pots if they have changed
     if (JSON.stringify(this.sidePots) !== JSON.stringify(sidePots)) {
       this.sidePots = sidePots;
       logMessage(
-        `(Table #${this.slotNumber}): Side pots updated: ${this.sidePots
+        `${this.logMessagePrefix}Side pots updated: ${this.sidePots
           .map((pot, potIndex) => `(#${potIndex + 1}) $${roundFloat(pot)}`)
           .join(" | ")}`,
         { color: "lightblue" }
@@ -396,6 +395,216 @@ class PokerTable {
     }
 
     return this.sidePots;
+  }
+
+  // Update all player positions (e.g. "BTN", "SB", "BB", "UTG", "UTG+1", "UTG+2", "MP", "MP+1", "MP+2", "LJ", "HJ", "CO"):
+  updatePlayerPositions() {
+    const previousButtonPlayer = Array.from(this.players.values()).find(
+      (player) => player.position === "BTN"
+    );
+
+    // 1. Get the player with the "BTN" position
+    const buttonPlayer = Array.from(this.players.values()).find((curPlayer) => {
+      // To get the button indicator DOM:
+      //  1. Get the <div> with a style including "z-index: 201" (e.g. <div style="z-index: 201; display: contents;">)
+      const buttonIndicatorDOM = Array.from(
+        curPlayer.dom.querySelectorAll("div")
+      ).find((div) => div.style.zIndex === "201");
+      curPlayer.buttonIndicatorDOM = buttonIndicatorDOM;
+
+      // To get the button visibility DOM:
+      //  1. Get the first child <div> with their classList containing "Desktop" and a style including "visibility: visible" or "visibility: hidden" (don't check recursively, only check the first level of children)
+      const buttonVisibilityDOM = Array.from(buttonIndicatorDOM.children).find(
+        (div) =>
+          div.classList.contains("Desktop") &&
+          (div.style.visibility === "visible" ||
+            div.style.visibility === "hidden")
+      );
+      curPlayer.buttonVisibilityDOM = buttonVisibilityDOM;
+
+      // Check if the current player is the dealer ("BTN")
+      // • If the button visibility DOM is visible, that means the current player is the dealer ("BTN")
+      if (buttonVisibilityDOM?.style.visibility !== "visible") return false;
+
+      // Check if the current player's position is not "BTN"
+      if (curPlayer.position !== "BTN") {
+        // Okay, so the dealer chip has moved to the current player's seat, or we are just joining the table and the dealer chip is already on the current player's seat, so we have to update the player positions...
+        // Let's mark this current player as the dealer ("BTN") and clear all other players' positions...
+
+        // 1. Clear all players' positions
+        for (const player of this.players.values()) player.position = null;
+        logMessage(
+          `${this.logMessagePrefix}New dealer detected. Clearing all current player position data...`,
+          { color: "lightblue" }
+        );
+
+        // 2. Update the current player's position to "BTN" (the dealer)
+        curPlayer.position = "BTN";
+        logMessage(
+          `${curPlayer.logMessagePrefix}Position updated: ${curPlayer.position}`,
+          { color: curPlayer.isMyPlayer ? "goldenrod" : "lightblue" }
+        );
+      }
+
+      // 3. Return the current player with the "BTN" position (the dealer)
+      return true;
+    });
+
+    // Check if we have found the player with the "BTN" position (the dealer)
+    if (
+      (!previousButtonPlayer && buttonPlayer) ||
+      (previousButtonPlayer &&
+        previousButtonPlayer.seatNumber !== buttonPlayer.seatNumber)
+    ) {
+      {
+        // Now that we have the player with the "BTN" (dealer) position, we have to calculate the rest of the player's positions relative to the dealer...
+        // 1. Get all players that are delt cards (meaning they are not sitting out)
+        const activePlayers = Array.from(this.players.values())
+          .filter((player) => {
+            if (
+              player.actionHistory[player.actionHistory.length - 1].action ===
+              "SITTING OUT"
+            ) {
+              // Check if the player was already marked as sat out
+              player.position = null;
+              logMessage(
+                `${player.logMessagePrefix}Player is now sitting out.`,
+                {
+                  color: player.isMyPlayer ? "goldenrod" : "lightblue",
+                }
+              );
+
+              return false;
+            }
+
+            return true;
+          })
+          .sort((a, b) => a.seatNumber - b.seatNumber);
+
+        // 2. Calculate the player's position relative to the button
+        // To calculate the player's position:
+        //  1. Find the player with the "BTN" position, and get the player's position relative to the player with the "BTN" position
+        //   Note: Make sure to skip any players with player.position === null (this means they are sitting out, so they should not be included in the calculation)
+        //  2. The positions are as follows: "UTG", "UTG+1", "UTG+2", "UTG+x", "MP", "MP+1", "MP+2", "MP+x", "LJ", "HJ", "CO", "BTN", "SB", "BB", etc. where "SB" is the player to the left of the "BTN" player, "BB" is the player to the left of the "SB" player, "UTG" is the player to the left of the "BB" player, and so on
+        //   Note: Make sure "UTG" is always after "SB", "BTN" is always after "CO", "HJ" is always before "CO", and "LJ" is always before "HJ", and "MP+x" (only include "+x", where x is represents the additional "MP" after "MP") is always before "LJ", and "UTG" (or "UTG+x") is always before "MP"
+        //   Another note: On a table with 9 people, the order should always be "BTN", "SB", "BB", "UTG", "UTG+1", "MP", "LJ", "HJ", "CO"
+        //   Adding onto the note above: On a table with 6 people, the order should always be "BTN", "SB", "BB", "UTG", "HJ", "CO"
+        //   • On extreme cases, which will almost never happen, if there is a table with 13 people for example, the order should be "BTN", "SB", "BB", "UTG", "UTG+1", "UTG+2", "UTG+3", "MP", "MP+1", "MP+2", "LJ", "HJ", "CO" (you can tell that "UTG+x" gets priority over "MP+x", so whenever theres an odd number of player NOT "UTG"/"UTG+x" or "MP"/"MP+x", the role assigning of "UTG"/"UTG+x" players will be prioritized over the "MP"/"MP+x" players, meaning the "+x" number for "UTG+x" will always be greater than the "+x" number for "MP+x")
+
+        // Pivot the dealer to the first position in a new array pivotedActivePlayersInOrder, then using the player seatNumbers, we can add the remaining players in order counting up from the dealer, then when we reach the highest seatNumber, we can add the remaining players in order counting from 1 to the dealer's seatNumber
+        const pivotedActivePlayersInOrder = [
+          // Pivot the dealer to the first position
+          buttonPlayer,
+          // Add the remaining players in order counting up from the dealer until we reach the highest seatNumber
+          ...activePlayers
+            .filter((player) => player.seatNumber > buttonPlayer.seatNumber)
+            .sort((a, b) => a.seatNumber - b.seatNumber),
+          // Add the remaining players in order counting from 1 to the dealer's seatNumber
+          ...activePlayers
+            .filter((player) => player.seatNumber < buttonPlayer.seatNumber)
+            .sort((a, b) => a.seatNumber - b.seatNumber),
+        ];
+
+        // Assign the positions.
+        // First, assign SB, BB, UTG
+        for (let i = 1; i <= 3; i++) {
+          const player = pivotedActivePlayersInOrder[i];
+
+          // Check if we have reached the end of the player list or if the player already has a position
+          if (!player || player.position !== null) break;
+
+          switch (i) {
+            case 1:
+              player.position = "SB";
+              break;
+            case 2:
+              player.position = "BB";
+              break;
+            case 3:
+              player.position = "UTG";
+              break;
+            default:
+              break;
+          }
+        }
+
+        // Get the remaining players with an unassigned position
+        let unassignedPlayers = pivotedActivePlayersInOrder.filter(
+          (player) => player.position === null
+        );
+
+        // Then, go to the end of the unassigned player list: for each player, assign backwards CO, HJ, LJ.
+        for (let i = unassignedPlayers.length - 1; i >= 0; i--) {
+          const player = unassignedPlayers[i];
+
+          // Check if we have reached past the beginning of the player list (which will probably never happen) or if the player already has a position
+          if (!player || player.position !== null) break;
+
+          switch (i) {
+            case unassignedPlayers.length - 1:
+              player.position = "CO";
+              break;
+            case unassignedPlayers.length - 2:
+              player.position = "HJ";
+              break;
+            case unassignedPlayers.length - 3:
+              player.position = "LJ";
+              break;
+            default:
+              break;
+          }
+        }
+
+        // Update the unassignedPlayers array
+        unassignedPlayers = unassignedPlayers.filter(
+          (player) => player.position === null
+        );
+
+        // Now, let's assign the positions in the middle of the [BTN, SB, BB, UTG, ..., LJ, HJ, CO] that are still unassigned
+        const firstHalfOfUnassignedPlayers = unassignedPlayers.slice(
+            0,
+            Math.floor(unassignedPlayers.length / 2)
+          ),
+          secondHalfOfUnassignedPlayers = unassignedPlayers.slice(
+            Math.floor(unassignedPlayers.length / 2)
+          );
+
+        // Assign the first half of the unassigned players (UTG+x)
+        for (let i = 0; i < firstHalfOfUnassignedPlayers.length; i++) {
+          const player = firstHalfOfUnassignedPlayers[i];
+
+          // Check if the player already has a position
+          if (player.position !== null) continue;
+
+          player.position = `UTG+${i + 1}`;
+        }
+
+        // Assign the second half of the unassigned players (MP, MP+x)
+        for (let i = 0; i < secondHalfOfUnassignedPlayers.length; i++) {
+          const player = secondHalfOfUnassignedPlayers[i];
+
+          // Check if the player already has a position
+          if (player.position !== null) continue;
+
+          if (i === 0) player.position = "MP";
+          else player.position = `MP+${i + 1}`;
+        }
+
+        // Log the updated positions
+        for (const player of pivotedActivePlayersInOrder) {
+          // Ignore non-updated players
+          if (player.position === null || player.position === "BTN") continue;
+          logMessage(
+            `${player.logMessagePrefix}Position updated: ${player.position}`,
+            {
+              color: player.isMyPlayer ? "goldenrod" : "lightblue",
+            }
+          );
+        }
+      }
+    }
+
+    return this.players;
   }
 
   getTableInfo() {
@@ -410,18 +619,26 @@ class PokerTable {
 
   syncTableInfo() {
     this.getTableInfo();
-    setInterval(() => this.getTableInfo(), TICK_RATE);
+    this.syncTableInfoInterval = setInterval(
+      () => this.getTableInfo(),
+      TICK_RATE
+    );
+  }
+
+  stopSyncingTableInfo() {
+    clearInterval(this.syncTableInfoInterval);
   }
 }
 
 // To format a card (from the "data-qa" attribute value):
-// 1. Get all numbers from the string
-// 2. Convert the numbers to the formatted card (e.g. "card9" is the 10 of clubs, or "10c" as we call it)
-// Note: clubs are numbers in range 0-12, diamonds are 13-25, hearts are 26-38, and spades are 39-51
-// ac = 0, 2c = 1, 3c = 2, 4c = 3, 5c = 4, 6c = 5, 7c = 6, 8c = 7, 9c = 8, 10c = 9, jc = 10, qc = 11, kc = 12
-// ad = 13, 2d = 14, 3d = 15, 4d = 16, 5d = 17, 6d = 18, 7d = 19, 8d = 20, 9d = 21, 10d = 22, jd = 23, qd = 24, kd = 25
-// ah = 26, 2h = 27, 3h = 28, 4h = 29, 5h = 30, 6h = 31, 7h = 32, 8h = 33, 9h = 34, 10h = 35, jh = 36, qh = 37, kh = 38
-// as = 39, 2s = 40, 3s = 41, 4s = 42, 5s = 43, 6s = 44, 7s = 45, 8s = 46, 9s = 47, 10s = 48, js = 49, qs = 50, ks = 51
+//  1. Get all numbers from the string
+//  2. Convert the numbers to the formatted card (e.g. "card9" is the 10 of clubs, or "10c" as we call it)
+//   Note: clubs are numbers in range 0-12, diamonds are 13-25, hearts are 26-38, and spades are 39-51
+//    • Full list of cards:
+//     ac = 0, 2c = 1, 3c = 2, 4c = 3, 5c = 4, 6c = 5, 7c = 6, 8c = 7, 9c = 8, 10c = 9, jc = 10, qc = 11, kc = 12
+//     ad = 13, 2d = 14, 3d = 15, 4d = 16, 5d = 17, 6d = 18, 7d = 19, 8d = 20, 9d = 21, 10d = 22, jd = 23, qd = 24, kd = 25
+//     ah = 26, 2h = 27, 3h = 28, 4h = 29, 5h = 30, 6h = 31, 7h = 32, 8h = 33, 9h = 34, 10h = 35, jh = 36, qh = 37, kh = 38
+//     as = 39, 2s = 40, 3s = 41, 4s = 42, 5s = 43, 6s = 44, 7s = 45, 8s = 46, 9s = 47, 10s = 48, js = 49, qs = 50, ks = 51
 const formatCard = (unformattedCard) => {
   const number = parseInt(unformattedCard.match(/\d+/g)[0]);
 
@@ -477,23 +694,38 @@ const getTableSlotIFrames = () =>
 const getMultitableSlot = (iframe) =>
   parseInt(iframe.getAttribute("data-multitableslot")) + 1;
 
+// Main function (self-invoking)
+let syncPokerTableSlotsInterval;
+const main = (function main() {
+  exit(true);
+  syncPokerTableSlots();
+  syncPokerTableSlotsInterval = setInterval(syncPokerTableSlots, TICK_RATE);
+  return main;
+})();
+
 // Exit the script
 function exit(silent = false) {
-  clearAllIntervals();
+  // Stop syncing the poker table slots
+  clearInterval(syncPokerTableSlotsInterval);
+
+  // Stop syncing all poker tables
+  for (const table of pokerTables.values()) {
+    table.stopSyncingTableInfo();
+    for (const player of table.players.values()) {
+      player.stopSyncingPlayerInfo();
+    }
+  }
+
   pokerTables.clear();
+
+  // Force clear all timeouts/intervals created by the script
+  clearAllIntervals();
+
   if (!silent)
     logMessage("Now exiting PokerEye+ (Plus) for Ignition Casino...", {
       color: "crimson",
     });
 }
-
-// Main function (self-invoking)
-const main = (function main() {
-  exit(true);
-  syncPokerTableSlots();
-  setInterval(syncPokerTableSlots, 1000);
-  return main;
-})();
 
 // utils.js
 // Utility function to log watermarked messages to the console
@@ -535,6 +767,11 @@ function roundFloat(number, decimalPlaces = 2, forceDecimalPlaces = true) {
     : parseFloat(number.toFixed(decimalPlaces));
 }
 
+function parseCurrency(currency) {
+  if (currency === undefined || currency === null) return null;
+  return parseFloat(currency.replace(/[$,]/g, ""));
+}
+
 function formatTimestamp(date) {
   const yyyy = date.getFullYear();
   const MM = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-based
@@ -545,4 +782,33 @@ function formatTimestamp(date) {
   const mmm = String(date.getMilliseconds()).padStart(3, "0");
 
   return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}.${mmm}`;
+}
+
+function safeStringify(obj, replacer) {
+  return JSON.stringify(obj, replacer);
+}
+
+function safeObjectCompare(obj1, obj2) {
+  let visitedObjects = new WeakSet();
+
+  function replacer(key, value) {
+    if (typeof value === "object" && value !== null) {
+      // Ensure only objects are added
+      if (visitedObjects.has(value)) {
+        return;
+      }
+      visitedObjects.add(value);
+    }
+
+    if (
+      typeof value === "function" ||
+      typeof value === "symbol" ||
+      value instanceof HTMLElement
+    ) {
+      return undefined;
+    }
+    return value;
+  }
+
+  return safeStringify(obj1, replacer) === safeStringify(obj2, replacer);
 }
