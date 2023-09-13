@@ -77,8 +77,14 @@ class HUD {
       if (!this.isCreated) this.createHud();
       else {
         // Refresh the toggleVisibilitySwitch if it disappeared
-        if (!this.doc.querySelector("#PokerEyePlus-toggleVisibilitySwitch"))
+        if (
+          !this.footerContainer.querySelector(
+            "#PokerEyePlus-toggleVisibilitySwitch"
+          )
+        ) {
+          removeHUD({ toggleVisibilitySwitch: true });
           this.createToggleVisibilitySwitch();
+        }
       }
     } catch (error) {
       // console.error(error);
@@ -106,10 +112,11 @@ class HUD {
     this.isCreated = true;
   }
 
-  removeHUD() {
-    this.doc
-      ?.querySelectorAll("#PokerEyePlus-toggleVisibilitySwitch")
-      ?.forEach((node) => node.remove());
+  removeHUD(options = { toggleVisibilitySwitch: true }) {
+    if (options.toggleVisibilitySwitch)
+      this.doc
+        ?.querySelectorAll("#PokerEyePlus-toggleVisibilitySwitch")
+        ?.forEach((node) => node.remove());
   }
 
   toggleVisibility() {
