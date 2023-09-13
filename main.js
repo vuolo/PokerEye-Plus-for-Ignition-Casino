@@ -415,6 +415,7 @@ class PokerTable {
   }
 
   close() {
+    this.isClosing = true;
     this.stopSyncingTableInfo();
     this.hud.close();
   }
@@ -444,6 +445,7 @@ class PokerTable {
         sidePots: this.getSidePots(),
       };
     } catch (error) {
+      if (this.isClosing) return;
       logMessage(`${this.logMessagePrefix}Error getting table info: ${error}`, {
         color: "red",
       });
