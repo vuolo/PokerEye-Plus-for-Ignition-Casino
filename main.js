@@ -53,9 +53,11 @@ class Player {
     this.balance = balance;
 
     // Log the balance if it has changed
-    if (previousBalance !== this.balance)
+    if (this.balance !== undefined && previousBalance !== this.balance)
       logMessage(
-        `${this.logMessagePrefix}Balance updated: $${roundFloat(this.balance)}${
+        `${this.logMessagePrefix}Balance updated: $${roundFloat(
+          this.balance || 0
+        )}${
           previousBalance !== undefined
             ? ` (net: $${roundFloat(
                 this.balance - (previousBalance || 0)
@@ -322,7 +324,8 @@ class PokerTable {
       logMessage(
         `${this.logMessagePrefix}Players: ${Array.from(this.players.values())
           .map(
-            (player) => `(#${player.seatNumber}) $${roundFloat(player.balance)}`
+            (player) =>
+              `(#${player.seatNumber}) $${roundFloat(player.balance || 0)}`
           )
           .join(" | ")}`,
         { color: "orangered" }
@@ -353,7 +356,9 @@ class PokerTable {
     // Update the total pot if it has changed
     if (totalPot !== undefined && this.totalPot !== totalPot) {
       logMessage(
-        `${this.logMessagePrefix}Total pot updated: $${roundFloat(totalPot)}${
+        `${this.logMessagePrefix}Total pot updated: $${roundFloat(
+          totalPot || 0
+        )}${
           this.totalPot !== undefined
             ? ` (net: $${roundFloat(
                 totalPot - (this.totalPot || 0)
@@ -377,7 +382,9 @@ class PokerTable {
     // Update the main pot if it has changed
     if (mainPot !== undefined && this.mainPot !== mainPot) {
       logMessage(
-        `${this.logMessagePrefix}Main pot updated: $${roundFloat(mainPot)}${
+        `${this.logMessagePrefix}Main pot updated: $${roundFloat(
+          mainPot || 0
+        )}${
           this.mainPot !== undefined
             ? ` (net: $${roundFloat(
                 mainPot - (this.mainPot || 0)
@@ -406,7 +413,7 @@ class PokerTable {
         `${this.logMessagePrefix}Side pots updated: ${sidePots
           .map(
             (pot, potIndex) =>
-              `(#${potIndex + 1}) $${roundFloat(pot)}${
+              `(#${potIndex + 1}) $${roundFloat(pot || 0)}${
                 this.sidePots !== undefined
                   ? ` (net: $${roundFloat(
                       pot - (this.sidePots[potIndex] || 0)
@@ -489,6 +496,7 @@ class PokerTable {
         // Now that we have the player with the "BTN" (dealer) position, we have to calculate the rest of the player's positions relative to the dealer...
         // 1. Get all players that are delt cards (meaning they are not sitting out)
         const activePlayers = Array.from(this.players.values())
+          .filter((player) => buttonPlayer.seatNumber !== player.seatNumber)
           .filter((player) => {
             if (
               player.actionHistory[player.actionHistory.length - 1].action ===
