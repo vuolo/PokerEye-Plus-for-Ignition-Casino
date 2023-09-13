@@ -1,6 +1,14 @@
 const TICK_RATE = 100; // ms
 const LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE = false;
-// const TAILWIND_CSS_CDN_URL = "https://cdn.tailwindcss.com";
+const ENABLE_HUD_VISIBILITY_BY_DEFAULT = true;
+const TAILWIND_CSS_CDN_URL = "https://cdn.tailwindcss.com";
+const TAILWIND_CSS_CUSTOM_CONFIG = {
+  corePlugins: {
+    preflight: false,
+  },
+  // prefix: 'tw-',
+  important: true,
+};
 
 class HUD {
   constructor(pokerTable) {
@@ -11,27 +19,37 @@ class HUD {
 
   init() {
     this.isCreated = undefined;
-    this.isVisible = false;
+    this.isVisible = ENABLE_HUD_VISIBILITY_BY_DEFAULT;
 
     logMessage(`${this.pokerTable.logMessagePrefix}Initializing HUD...`, {
       color: "cyan",
     });
 
-    // this.importTailwindCSS();
     this.syncDOM();
   }
 
-  // deprecated (since it messes up the table image's styling...)
-  // importTailwindCSS() {
-  //   // Check if Tailwind CSS is already imported
-  //   for (let script of this.doc.scripts)
-  //     if (script.src === TAILWIND_CSS_CDN_URL) return;
+  importTailwindCSS() {
+    // Check if Tailwind CSS is already imported
+    for (const script of this.doc.scripts)
+      if (script.src.includes(TAILWIND_CSS_CDN_URL)) return;
 
-  //   // Import Tailwind CSS
-  //   const script = this.doc.createElement("script");
-  //   script.src = TAILWIND_CSS_CDN_URL;
-  //   this.doc.head.appendChild(script);
-  // }
+    // Import Tailwind CSS
+    const importScript = this.doc.createElement("script");
+    importScript.src = TAILWIND_CSS_CDN_URL;
+    this.doc.head.appendChild(importScript);
+
+    // Add the Tailwind CSS custom configuation
+    const checkTailwindLoaded = setInterval(() => {
+      if (!this.doc?.defaultView?.tailwind) return;
+      clearInterval(checkTailwindLoaded);
+
+      this.doc.defaultView.tailwind.config = TAILWIND_CSS_CUSTOM_CONFIG;
+    }, TICK_RATE);
+
+    logMessage(`${this.pokerTable.logMessagePrefix}Imported Tailwind CSS.`, {
+      color: "cyan",
+    });
+  }
 
   close() {
     this.stopSyncingDOM();
@@ -74,6 +92,7 @@ class HUD {
         .querySelector(`.${this.ignitionSwitchBarClassName}`)
         .querySelector("div").classList[0];
 
+      // Ready to create the HUD
       if (!this.isCreated) this.createHud();
       else {
         // Refresh the toggleVisibilitySwitch if it disappeared
@@ -102,6 +121,7 @@ class HUD {
 
   createHud() {
     this.removeHUD();
+    this.importTailwindCSS();
 
     this.createToggleVisibilitySwitch();
 
@@ -121,45 +141,42 @@ class HUD {
 
   toggleVisibility() {
     this.isVisible = !this.isVisible;
+    this.updateVisibilitySwitchStyling();
   }
 
   // Place the switch in the bottom right corner of the screen
   createToggleVisibilitySwitch() {
     const container = this.doc.createElement("div");
     container.id = "PokerEyePlus-toggleVisibilitySwitch";
-    container.className = this.ignitionSwitchContainerClassName;
-    container.style.position = "absolute";
-    container.style.right = "0";
-    container.style.bottom = "0";
-    container.style.margin = "0.25rem";
-    container.style.padding = "0.5rem";
-    container.style.cursor = "pointer";
-    container.style.color = "#E3E3E3";
-    container.style.fontSize = "12px";
+    container.className = `${this.ignitionSwitchContainerClassName} absolute right-0 bottom-0 m-1 p-2 cursor-pointer text-sm text-[#E3E3E3]`;
     container.innerHTML = `
       <div class="${this.ignitionSwitchBarClassName}">
         <div class="${this.ignitionSwitchButtonClassName}"></div>
       </div>
-      <div style="margin-top: 1px;">PokerEye+</div>
+      <div class="mt-[1px]">PokerEye+</div>
     `;
     this.toggleVisibilitySwitch = container;
 
-    const bar = container.querySelector(`.${this.ignitionSwitchBarClassName}`);
-    const button = container.querySelector(
-      `.${this.ignitionSwitchButtonClassName}`
-    );
-    container.addEventListener("click", () => {
-      this.toggleVisibility();
-      if (this.isVisible) {
-        bar.classList.add("switchedOn");
-        button.classList.add("switchedOn");
-      } else {
-        bar.classList.remove("switchedOn");
-        button.classList.remove("switchedOn");
-      }
-    });
+    container.addEventListener("click", () => this.toggleVisibility());
+    this.updateVisibilitySwitchStyling();
 
     this.footerContainer.appendChild(container);
+  }
+
+  updateVisibilitySwitchStyling() {
+    const bar = this.toggleVisibilitySwitch.querySelector(
+      `.${this.ignitionSwitchBarClassName}`
+    );
+    const button = this.toggleVisibilitySwitch.querySelector(
+      `.${this.ignitionSwitchButtonClassName}`
+    );
+    if (this.isVisible) {
+      bar.classList.add("switchedOn");
+      button.classList.add("switchedOn");
+    } else {
+      bar.classList.remove("switchedOn");
+      button.classList.remove("switchedOn");
+    }
   }
 }
 
@@ -714,6 +731,7 @@ class PokerTable {
     if (
       (!previousButtonPlayer && buttonPlayer) ||
       (previousButtonPlayer &&
+        buttonPlayer &&
         previousButtonPlayer.seatNumber !== buttonPlayer.seatNumber)
     ) {
       {
