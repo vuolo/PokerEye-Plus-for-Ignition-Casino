@@ -400,8 +400,10 @@ class PokerTable {
   init() {
     this.doc = this.iframe.contentWindow?.document;
     this.firstHandDone = false;
+    this.isClosing = false;
 
     this.board = [];
+    this.numHands = 0;
     this.players = new Map();
 
     this.totalPot = undefined;
@@ -463,6 +465,7 @@ class PokerTable {
     }
 
     this.board = [];
+    if (this.firstHandDone) this.numHands++;
 
     this.totalPot = undefined;
     this.mainPot = undefined;
