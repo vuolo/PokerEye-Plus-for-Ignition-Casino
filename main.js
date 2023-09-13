@@ -256,16 +256,17 @@ class PokerTable {
     // Update the board if it has changed
     if (JSON.stringify(newBoard) !== JSON.stringify(this.board)) {
       this.board = newBoard;
-      if (this.board.length === 0)
+      if (this.board.length === 0) {
         logMessage(`${this.logMessagePrefix}The board has been cleared.`, {
-          color: "lightblue",
+          color: "mediumpurple",
         });
-      else
+        this.resetTableInfo();
+      } else
         logMessage(
           `${this.logMessagePrefix}The board has been updated. ${this.board
             .map((card) => `[${card}]`)
             .join(" ")}`,
-          { color: "lightblue" }
+          { color: "mediumpurple" }
         );
     }
 
@@ -288,7 +289,7 @@ class PokerTable {
       if (!this.players.has(seatNumber) && !this.isSeatVacant(seatDOM)) {
         logMessage(
           `${this.logMessagePrefix}A player has joined seat #${seatNumber}.`,
-          { color: "lightgray" }
+          { color: "orange" }
         );
         this.players.set(seatNumber, new Player(seatDOM, seatNumber, this));
       }
@@ -303,7 +304,7 @@ class PokerTable {
         this.players.delete(seatNumber);
         logMessage(
           `${this.logMessagePrefix}A player has left seat #${seatNumber}.`,
-          { color: "lightgray" }
+          { color: "orange" }
         );
       }
     }
@@ -316,7 +317,7 @@ class PokerTable {
             (player) => `(#${player.seatNumber}) $${roundFloat(player.balance)}`
           )
           .join(" | ")}`,
-        { color: "lightblue" }
+        { color: "orangered" }
       );
     }
 
@@ -343,13 +344,17 @@ class PokerTable {
 
     // Update the total pot if it has changed
     if (totalPot !== undefined && this.totalPot !== totalPot) {
-      this.totalPot = totalPot;
       logMessage(
-        `${this.logMessagePrefix}Total pot updated: $${roundFloat(
-          this.totalPot
-        )}`,
-        { color: "lightblue" }
+        `${this.logMessagePrefix}Total pot updated: $${roundFloat(totalPot)}${
+          this.totalPot !== undefined
+            ? ` (net: $${roundFloat(
+                totalPot - this.totalPot
+              )}, previous: $${roundFloat(this.totalPot)})`
+            : ""
+        }`,
+        { color: "mediumseagreen" }
       );
+      this.totalPot = totalPot;
     }
 
     return this.totalPot;
@@ -363,13 +368,17 @@ class PokerTable {
 
     // Update the main pot if it has changed
     if (mainPot !== undefined && this.mainPot !== mainPot) {
-      this.mainPot = mainPot;
       logMessage(
-        `${this.logMessagePrefix}Main pot updated: $${roundFloat(
-          this.mainPot
-        )}`,
-        { color: "lightblue" }
+        `${this.logMessagePrefix}Main pot updated: $${roundFloat(mainPot)}${
+          this.mainPot !== undefined
+            ? ` (net: $${roundFloat(
+                mainPot - this.mainPot
+              )}, previous: $${roundFloat(this.mainPot)})`
+            : ""
+        }`,
+        { color: "mediumseagreen" }
       );
+      this.mainPot = mainPot;
     }
 
     return this.mainPot;
@@ -385,13 +394,22 @@ class PokerTable {
 
     // Update the side pots if they have changed
     if (JSON.stringify(this.sidePots) !== JSON.stringify(sidePots)) {
-      this.sidePots = sidePots;
       logMessage(
-        `${this.logMessagePrefix}Side pots updated: ${this.sidePots
-          .map((pot, potIndex) => `(#${potIndex + 1}) $${roundFloat(pot)}`)
+        `${this.logMessagePrefix}Side pots updated: ${sidePots
+          .map(
+            (pot, potIndex) =>
+              `(#${potIndex + 1}) $${roundFloat(pot)}${
+                this.sidePots !== undefined
+                  ? ` (net: $${roundFloat(
+                      pot - this.sidePots[potIndex]
+                    )}, previous: $${roundFloat(this.sidePots[potIndex] || 0)})`
+                  : ""
+              }`
+          )
           .join(" | ")}`,
-        { color: "lightblue" }
+        { color: "mediumseagreen" }
       );
+      this.sidePots = sidePots;
     }
 
     return this.sidePots;
@@ -432,10 +450,13 @@ class PokerTable {
         // Let's mark this current player as the dealer ("BTN") and clear all other players' positions...
 
         // 1. Clear all players' positions
-        for (const player of this.players.values()) player.position = null;
+        for (const player of Array.from(this.players.values()).filter(
+          (player) => player.seatNumber !== curPlayer.seatNumber
+        ))
+          player.position = null;
         logMessage(
           `${this.logMessagePrefix}New dealer detected. Clearing all current player position data...`,
-          { color: "lightblue" }
+          { color: "mistyrose" }
         );
 
         // 2. Update the current player's position to "BTN" (the dealer)
@@ -463,14 +484,16 @@ class PokerTable {
           .filter((player) => {
             if (
               player.actionHistory[player.actionHistory.length - 1].action ===
-              "SITTING OUT"
+                "SITTING OUT" ||
+              player.actionHistory[player.actionHistory.length - 1].action ===
+                "NEW PLAYER"
             ) {
               // Check if the player was already marked as sat out
               player.position = null;
               logMessage(
                 `${player.logMessagePrefix}Player is now sitting out.`,
                 {
-                  color: player.isMyPlayer ? "goldenrod" : "lightblue",
+                  color: player.isMyPlayer ? "goldenrod" : "lightgray",
                 }
               );
 
@@ -491,10 +514,8 @@ class PokerTable {
         //   Adding onto the note above: On a table with 6 people, the order should always be "BTN", "SB", "BB", "UTG", "HJ", "CO"
         //   • On extreme cases, which will almost never happen, if there is a table with 13 people for example, the order should be "BTN", "SB", "BB", "UTG", "UTG+1", "UTG+2", "UTG+3", "MP", "MP+1", "MP+2", "LJ", "HJ", "CO" (you can tell that "UTG+x" gets priority over "MP+x", so whenever theres an odd number of player NOT "UTG"/"UTG+x" or "MP"/"MP+x", the role assigning of "UTG"/"UTG+x" players will be prioritized over the "MP"/"MP+x" players, meaning the "+x" number for "UTG+x" will always be greater than the "+x" number for "MP+x")
 
-        // Pivot the dealer to the first position in a new array pivotedActivePlayersInOrder, then using the player seatNumbers, we can add the remaining players in order counting up from the dealer, then when we reach the highest seatNumber, we can add the remaining players in order counting from 1 to the dealer's seatNumber
+        // Pivot the SB to the first position in a new array pivotedActivePlayersInOrder, then using the player seatNumbers, we can add the remaining players in order counting up from the dealer, then when we reach the highest seatNumber, we can add the remaining players in order counting from 1 to the dealer's seatNumber
         const pivotedActivePlayersInOrder = [
-          // Pivot the dealer to the first position
-          buttonPlayer,
           // Add the remaining players in order counting up from the dealer until we reach the highest seatNumber
           ...activePlayers
             .filter((player) => player.seatNumber > buttonPlayer.seatNumber)
@@ -507,20 +528,20 @@ class PokerTable {
 
         // Assign the positions.
         // First, assign SB, BB, UTG
-        for (let i = 1; i <= 3; i++) {
+        for (let i = 0; i <= 2; i++) {
           const player = pivotedActivePlayersInOrder[i];
 
           // Check if we have reached the end of the player list or if the player already has a position
           if (!player || player.position !== null) break;
 
           switch (i) {
-            case 1:
+            case 0:
               player.position = "SB";
               break;
-            case 2:
+            case 1:
               player.position = "BB";
               break;
-            case 3:
+            case 2:
               player.position = "UTG";
               break;
             default:
@@ -607,6 +628,17 @@ class PokerTable {
     return this.players;
   }
 
+  resetTableInfo() {
+    this.board = [];
+
+    this.totalPot = undefined;
+    this.mainPot = undefined;
+    this.sidePots = [];
+
+    this.stopSyncingTableInfo();
+    this.syncTableInfo(false);
+  }
+
   getTableInfo() {
     return {
       board: this.getBoard(),
@@ -617,8 +649,8 @@ class PokerTable {
     };
   }
 
-  syncTableInfo() {
-    this.getTableInfo();
+  syncTableInfo(runInstantly = true) {
+    if (runInstantly) this.getTableInfo();
     this.syncTableInfoInterval = setInterval(
       () => this.getTableInfo(),
       TICK_RATE
@@ -782,33 +814,4 @@ function formatTimestamp(date) {
   const mmm = String(date.getMilliseconds()).padStart(3, "0");
 
   return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}.${mmm}`;
-}
-
-function safeStringify(obj, replacer) {
-  return JSON.stringify(obj, replacer);
-}
-
-function safeObjectCompare(obj1, obj2) {
-  let visitedObjects = new WeakSet();
-
-  function replacer(key, value) {
-    if (typeof value === "object" && value !== null) {
-      // Ensure only objects are added
-      if (visitedObjects.has(value)) {
-        return;
-      }
-      visitedObjects.add(value);
-    }
-
-    if (
-      typeof value === "function" ||
-      typeof value === "symbol" ||
-      value instanceof HTMLElement
-    ) {
-      return undefined;
-    }
-    return value;
-  }
-
-  return safeStringify(obj1, replacer) === safeStringify(obj2, replacer);
 }
