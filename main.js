@@ -1,5 +1,160 @@
 const TICK_RATE = 100; // ms
 const LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE = false;
+// const TAILWIND_CSS_CDN_URL = "https://cdn.tailwindcss.com";
+
+class HUD {
+  constructor(pokerTable) {
+    this.pokerTable = pokerTable;
+
+    this.init();
+  }
+
+  init() {
+    this.isCreated = undefined;
+    this.isVisible = false;
+
+    logMessage(`${this.pokerTable.logMessagePrefix}Initializing HUD...`, {
+      color: "cyan",
+    });
+
+    // this.importTailwindCSS();
+    this.syncDOM();
+  }
+
+  // deprecated (since it messes up the table image's styling...)
+  // importTailwindCSS() {
+  //   // Check if Tailwind CSS is already imported
+  //   for (let script of this.doc.scripts)
+  //     if (script.src === TAILWIND_CSS_CDN_URL) return;
+
+  //   // Import Tailwind CSS
+  //   const script = this.doc.createElement("script");
+  //   script.src = TAILWIND_CSS_CDN_URL;
+  //   this.doc.head.appendChild(script);
+  // }
+
+  close() {
+    this.stopSyncingDOM();
+    this.removeHUD();
+  }
+
+  syncDOM(runInstantly = true) {
+    if (runInstantly) this.getDOM();
+    this.syncDOMInterval = setInterval(() => this.getDOM(), TICK_RATE);
+  }
+
+  stopSyncingDOM() {
+    clearInterval(this.syncDOMInterval);
+  }
+
+  getDOM() {
+    try {
+      this.doc = this.pokerTable.doc;
+      this.root = this.doc.getElementById("root");
+
+      // Get wrappers and containers
+      this.tableWrapper = Array.from(this.doc.querySelectorAll("div")).find(
+        (div) => div.style.display === "contents"
+      );
+      this.tableContainer = Array.from(this.tableWrapper.children).slice(-2)[0];
+      this.footerContainer = Array.from(this.tableWrapper.children).pop();
+
+      // Get Ignition's switch styling
+      // e.g. <div class="f1d4v63a f10grhtg"><div class="f1a9vlrz"><div class="f1rgt9db"><div class="f1wig6fb"><div class="fg407x7"></div></div><div>Mute side notifications</div></div></div><i class="icon-component icon-send-message fqm6o4r Desktop smile" style="color: rgb(255, 255, 255); cursor: pointer;"></i></div>
+      this.ignitionSwitchConainer = Array.from(
+        this.doc
+          .querySelector('div[data-qa="rightSidePanel"]')
+          .querySelectorAll("div")
+      ).find((div) => div.innerHTML === "Mute side notifications").parentNode;
+      this.ignitionSwitchContainerClassName =
+        this.ignitionSwitchConainer.className;
+      this.ignitionSwitchBarClassName =
+        this.ignitionSwitchConainer.querySelector("div").classList[0];
+      this.ignitionSwitchButtonClassName = this.ignitionSwitchConainer
+        .querySelector(`.${this.ignitionSwitchBarClassName}`)
+        .querySelector("div").classList[0];
+
+      if (!this.isCreated) this.createHud();
+      else {
+        // Refresh the toggleVisibilitySwitch if it disappeared
+        if (!this.doc.querySelector("#PokerEyePlus-toggleVisibilitySwitch"))
+          this.createToggleVisibilitySwitch();
+      }
+    } catch (error) {
+      // console.error(error);
+      this.removeHUD();
+
+      // Waiting for the table DOM to be ready...
+      if (this.isCreated === undefined)
+        logMessage(
+          `${this.pokerTable.logMessagePrefix}Waiting for the HUD DOM to be ready...`,
+          { color: "cyan" }
+        );
+      this.isCreated = false;
+    } // The table DOM is not ready yet... (this happens when we join a table)
+  }
+
+  createHud() {
+    this.removeHUD();
+
+    this.createToggleVisibilitySwitch();
+
+    logMessage(
+      `${this.pokerTable.logMessagePrefix}HUD created. Click the switch to toggle visibility.`,
+      { color: "cyan" }
+    );
+    this.isCreated = true;
+  }
+
+  removeHUD() {
+    this.doc
+      ?.querySelectorAll("#PokerEyePlus-toggleVisibilitySwitch")
+      ?.forEach((node) => node.remove());
+  }
+
+  toggleVisibility() {
+    this.isVisible = !this.isVisible;
+  }
+
+  // Place the switch in the bottom right corner of the screen
+  createToggleVisibilitySwitch() {
+    const container = this.doc.createElement("div");
+    container.id = "PokerEyePlus-toggleVisibilitySwitch";
+    container.className = this.ignitionSwitchContainerClassName;
+    container.style.position = "absolute";
+    container.style.right = "0";
+    container.style.bottom = "0";
+    container.style.margin = "0.25rem";
+    container.style.padding = "0.5rem";
+    container.style.cursor = "pointer";
+    container.style.color = "#E3E3E3";
+    container.style.fontSize = "12px";
+    container.innerHTML = `
+      <div class="${this.ignitionSwitchBarClassName}">
+        <div class="${this.ignitionSwitchButtonClassName}"></div>
+      </div>
+      <div style="margin-top: 1px;">PokerEye+</div>
+    `;
+    this.toggleVisibilitySwitch = container;
+
+    const bar = container.querySelector(`.${this.ignitionSwitchBarClassName}`);
+    const button = container.querySelector(
+      `.${this.ignitionSwitchButtonClassName}`
+    );
+    container.addEventListener("click", () => {
+      this.toggleVisibility();
+      if (this.isVisible) {
+        bar.classList.add("switchedOn");
+        button.classList.add("switchedOn");
+      } else {
+        bar.classList.remove("switchedOn");
+        button.classList.remove("switchedOn");
+      }
+    });
+
+    this.footerContainer.appendChild(container);
+  }
+}
 
 class Player {
   constructor(dom, seatNumber, parentTable) {
@@ -16,6 +171,7 @@ class Player {
     this.balance = undefined;
     this.holeCards = [];
     this.actionHistory = [];
+    this.isTurnToAct = false;
     this.position = null;
 
     this.logMessagePrefix = `(Table #${this.parentTable.slotNumber}, Seat #${
@@ -25,19 +181,41 @@ class Player {
     this.syncPlayerInfo();
   }
 
-  // TODO: get if it's the player's turn to act:
-  //   <div class="fghgvzm" style="top: 3px; height: 130px; width: 130px;">
-  //    <div class="f1jf43s6" style="animation: 1820ms linear 0ms infinite normal none running f493ozf;"></div>
-  //    <div class="f1jf43s6" style="animation: 1820ms linear -455ms infinite normal none running f493ozf;"></div>
-  //    <div class="f1jf43s6" style="animation: 1820ms linear -910ms infinite normal none running f493ozf;"></div>
-  //    <div class="f1jf43s6" style="animation: 1820ms linear -1365ms infinite normal none running f493ozf;"></div>
-  // </div>
-  // OR:
-  // Check if the last action is "x seconds left to make a move..."
-  // --------------------------------------------------
+  syncPlayerInfo(runInstantly = true) {
+    if (runInstantly) this.getPlayerInfo();
+    this.syncPlayerInfoInterval = setInterval(
+      () => this.getPlayerInfo(),
+      TICK_RATE
+    );
+  }
 
-  // TODO: get whether or not the player was dealt in:
-  // --------------------------------------------------
+  stopSyncingPlayerInfo() {
+    clearInterval(this.syncPlayerInfoInterval);
+  }
+
+  getPlayerInfo() {
+    try {
+      return {
+        balance: this.getBalance(),
+        holeCards: this.getHoleCards(),
+        actionHistory: this.getCurrentAction(),
+      };
+    } catch (error) {
+      logMessage(
+        `${this.logMessagePrefix}Error getting player info: ${error}`,
+        { color: "red" }
+      );
+      console.error(error);
+    }
+  }
+
+  resetActionHistory() {
+    this.actionHistory = [];
+    this.isTurnToAct = false;
+
+    this.stopSyncingPlayerInfo();
+    this.syncPlayerInfo(false);
+  }
 
   getBalance() {
     const previousBalance = this.balance;
@@ -154,6 +332,11 @@ class Player {
 
       // Add the action object to the actionHistory array
       this.actionHistory.push(action);
+      this.isTurnToAct = action.action.includes(
+        "seconds left to make a move..."
+      )
+        ? true
+        : false;
       if (
         LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE ||
         !action.action.includes("seconds left to make a move...")
@@ -180,34 +363,6 @@ class Player {
       !isNaN(action) ? `${action} seconds left to make a move...` : action
     );
   }
-
-  getPlayerInfo() {
-    try {
-      return {
-        balance: this.getBalance(),
-        holeCards: this.getHoleCards(),
-        actionHistory: this.getCurrentAction(),
-      };
-    } catch (error) {
-      logMessage(
-        `${this.logMessagePrefix}Error getting player info: ${error}`,
-        { color: "red" }
-      );
-      console.error(error);
-    }
-  }
-
-  syncPlayerInfo() {
-    this.getPlayerInfo();
-    this.syncPlayerInfoInterval = setInterval(
-      () => this.getPlayerInfo(),
-      TICK_RATE
-    );
-  }
-
-  stopSyncingPlayerInfo() {
-    clearInterval(this.syncPlayerInfoInterval);
-  }
 }
 
 class PokerTable {
@@ -220,6 +375,7 @@ class PokerTable {
 
   init() {
     this.doc = this.iframe.contentWindow?.document;
+    this.firstHandDone = false;
 
     this.board = [];
     this.players = new Map();
@@ -231,6 +387,67 @@ class PokerTable {
     this.logMessagePrefix = `(Table #${this.slotNumber}): `;
 
     this.syncTableInfo();
+    this.hud = new HUD(this);
+  }
+
+  close() {
+    this.stopSyncingTableInfo();
+    this.hud.close();
+  }
+
+  syncTableInfo(runInstantly = true) {
+    if (runInstantly) this.getTableInfo();
+    this.syncTableInfoInterval = setInterval(
+      () => this.getTableInfo(),
+      TICK_RATE
+    );
+  }
+
+  stopSyncingTableInfo() {
+    clearInterval(this.syncTableInfoInterval);
+  }
+
+  getTableInfo() {
+    try {
+      // Update the document (in case we have joined a new table)
+      this.doc = this.iframe.contentWindow?.document;
+
+      return {
+        board: this.getBoard(),
+        players: this.getPlayers(),
+        totalPot: this.getTotalPot(),
+        mainPot: this.getMainPot(),
+        sidePots: this.getSidePots(),
+      };
+    } catch (error) {
+      logMessage(`${this.logMessagePrefix}Error getting table info: ${error}`, {
+        color: "red",
+      });
+      console.error(error);
+    }
+  }
+
+  nextHand() {
+    if (!this.firstHandDone) {
+      // Reset activity after the first hand to prevent calculating statistics without the missing data from the first hand (e.g. if we join the table in the middle of a hand, we don't want to calculate statistics for that hand)
+      for (const player of Array.from(this.players.values()))
+        player.resetActionHistory();
+
+      this.firstHandDone = true;
+    }
+
+    this.board = [];
+
+    this.totalPot = undefined;
+    this.mainPot = undefined;
+    this.sidePots = [];
+
+    logMessage(`${this.logMessagePrefix}The next hand is starting...`, {
+      color: "magenta",
+    });
+
+    this.stopSyncingTableInfo();
+    this.syncTableInfo(false);
   }
 
   getBoard() {
@@ -270,7 +487,7 @@ class PokerTable {
         logMessage(`${this.logMessagePrefix}The board has been cleared.`, {
           color: "mediumpurple",
         });
-        this.resetTableInfo();
+        this.nextHand();
       } else
         logMessage(
           `${this.logMessagePrefix}The board has been updated. ${this.board
@@ -643,46 +860,6 @@ class PokerTable {
 
     return this.players;
   }
-
-  resetTableInfo() {
-    this.board = [];
-
-    this.totalPot = undefined;
-    this.mainPot = undefined;
-    this.sidePots = [];
-
-    this.stopSyncingTableInfo();
-    this.syncTableInfo(false);
-  }
-
-  getTableInfo() {
-    try {
-      return {
-        board: this.getBoard(),
-        players: this.getPlayers(),
-        totalPot: this.getTotalPot(),
-        mainPot: this.getMainPot(),
-        sidePots: this.getSidePots(),
-      };
-    } catch (error) {
-      logMessage(`${this.logMessagePrefix}Error getting table info: ${error}`, {
-        color: "red",
-      });
-      console.error(error);
-    }
-  }
-
-  syncTableInfo(runInstantly = true) {
-    if (runInstantly) this.getTableInfo();
-    this.syncTableInfoInterval = setInterval(
-      () => this.getTableInfo(),
-      TICK_RATE
-    );
-  }
-
-  stopSyncingTableInfo() {
-    clearInterval(this.syncTableInfoInterval);
-  }
 }
 
 // To format a card (from the "data-qa" attribute value):
@@ -734,6 +911,7 @@ function assignNewPokerTableSlots(iframes = getTableSlotIFrames()) {
 function removeClosedPokerTableSlots(iframes = getTableSlotIFrames()) {
   for (const slotNumber of pokerTables.keys()) {
     if (!iframes.some((iframe) => getMultitableSlot(iframe) === slotNumber)) {
+      pokerTables.get(slotNumber).close();
       pokerTables.delete(slotNumber);
       logMessage(`(Table #${slotNumber}): Table closed.`, {
         color: "red",
@@ -763,12 +941,10 @@ function exit(silent = false) {
   // Stop syncing the poker table slots
   clearInterval(syncPokerTableSlotsInterval);
 
-  // Stop syncing all poker tables
+  // Close all poker tables and stop syncing player info
   for (const table of pokerTables.values()) {
-    table.stopSyncingTableInfo();
-    for (const player of table.players.values()) {
-      player.stopSyncingPlayerInfo();
-    }
+    table.close();
+    for (const player of table.players.values()) player.stopSyncingPlayerInfo();
   }
 
   pokerTables.clear();
