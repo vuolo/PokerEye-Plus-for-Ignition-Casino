@@ -1,6 +1,7 @@
 const TICK_RATE = 100; // ms
 const LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE = false;
 const ENABLE_HUD_VISIBILITY_BY_DEFAULT = true;
+const SHOW_BB_BY_DEFAULT = true;
 const TAILWIND_CSS_CDN_URL = "https://cdn.tailwindcss.com";
 const TAILWIND_CSS_CUSTOM_CONFIG = {
   corePlugins: {
@@ -103,6 +104,7 @@ class HUD {
     this.id = generateUUID();
     this.isCreated = undefined;
     this.isVisible = ENABLE_HUD_VISIBILITY_BY_DEFAULT;
+    this.showBB = SHOW_BB_BY_DEFAULT;
 
     this.myPlayer = undefined;
     this.menuPosition = INITIAL_MENU_POSITION;
@@ -287,6 +289,54 @@ class HUD {
     }
   }
 
+  toggleShowBB() {
+    this.showBB = !this.showBB;
+    this.updateShowBBSwitchStyling();
+
+    logMessage(
+      `${this.pokerTable.logMessagePrefix}Show BB toggled ${
+        this.isVisible ? "on" : "off"
+      }`,
+      { color: "cyan" }
+    );
+  }
+
+  createToggleShowBBSwitch() {
+    const container = this.doc.createElement("div");
+    container.id = "PokerEyePlus-toggleShowBBSwitch";
+    container.className = `${this.ignitionSwitchContainerClassName} cursor-pointer text-sm font-bold`;
+    container.innerHTML = `
+      <div class="${this.ignitionSwitchBarClassName}">
+        <div class="${this.ignitionSwitchButtonClassName}"></div>
+      </div>
+      <div class="mt-[1px]">Show BB</div>
+    `;
+    this.toggleShowBBSwitch = container;
+
+    container.addEventListener("click", () => this.toggleShowBB());
+    this.updateShowBBSwitchStyling();
+
+    return container;
+  }
+
+  updateShowBBSwitchStyling() {
+    const bar = this.toggleShowBBSwitch.querySelector(
+      `.${this.ignitionSwitchBarClassName}`
+    );
+    const button = this.toggleShowBBSwitch.querySelector(
+      `.${this.ignitionSwitchButtonClassName}`
+    );
+    if (this.showBB) {
+      bar.classList.add("switchedOn");
+      bar.classList.remove("bg-red-200");
+      button.classList.add("switchedOn");
+    } else {
+      bar.classList.remove("switchedOn");
+      bar.classList.add("bg-red-200");
+      button.classList.remove("switchedOn");
+    }
+  }
+
   // PokerEye+ main menu (only shows when this.isVisible)
   // An easy-to-use Chrome extension that records & calculates statistics while playing on Ignition Casino's Online Poker in your browser.
   createPokerEyeMenu(refreshOnly = false) {
@@ -396,6 +446,7 @@ class HUD {
     const container = this.doc.createElement("div");
     container.className = `flex flex-col w-full`;
 
+    // Header
     const header = `
       <div class="flex justify-between items-center shadow-2xl border-[4rem] border-b-red-300">
         <div id="PokerEyePlus-menu-dragZone" class="flex items-center space-x-1 pl-1 w-full h-full cursor-move">
@@ -411,15 +462,26 @@ class HUD {
     `;
     container.innerHTML = header;
 
+    // Close button
+    const closeMenuButton = container.querySelector("#PokerEyePlus-close-menu");
+    closeMenuButton.addEventListener("click", () => this.toggleVisibility());
+
+    // Details panel
     const detailsPanelContainer = this.doc.createElement("div");
     detailsPanelContainer.id = "PokerEyePlus-detailsPanel";
     detailsPanelContainer.className = `flex flex-col gap-1 p-2 text-sm`;
     detailsPanelContainer.innerHTML = detailsPanel;
-
-    const closeMenuButton = container.querySelector("#PokerEyePlus-close-menu");
-    closeMenuButton.addEventListener("click", () => this.toggleVisibility());
-
     container.appendChild(detailsPanelContainer);
+
+    // Undearneath the details panel container
+    const underneathDetailsPanelContainer = this.doc.createElement("div");
+    underneathDetailsPanelContainer.className = `flex flex-col gap-1 p-2 text-sm bg-[#F2F2F2]`;
+    container.appendChild(underneathDetailsPanelContainer);
+
+    // Show BB switch
+    const showBBSwitch = this.createToggleShowBBSwitch();
+    underneathDetailsPanelContainer.appendChild(showBBSwitch);
+
     menu.appendChild(container);
     this.pokerEyeMenu = menu;
     this.makeMenuDraggable();
