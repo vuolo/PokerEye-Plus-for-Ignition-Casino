@@ -302,8 +302,34 @@ class HUD {
       <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
         <span>Hand</span>
         <span class="font-bold">${
-          player.holeCards.map((card) => `[${card}]`).join(" ") ||
-          `<span class="opacity-[75%]">...</span>`
+          player.holeCards.length > 0
+            ? player.holeCards
+                .map((card) => {
+                  let suitIcon;
+                  let color = "black";
+                  switch (card.slice(-1)) {
+                    case "c":
+                      suitIcon = "♣";
+                      break;
+                    case "d":
+                      suitIcon = "♦";
+                      color = "red";
+                      break;
+                    case "h":
+                      suitIcon = "♥";
+                      color = "red";
+                      break;
+                    case "s":
+                      suitIcon = "♠";
+                      break;
+                  }
+                  return `<span style="color: ${color};">${card.slice(
+                    0,
+                    -1
+                  )}${suitIcon}</span>`;
+                })
+                .join(" ")
+            : `<span class="opacity-[75%]">...</span>`
         }</span>
       </div>
     `;
@@ -311,6 +337,8 @@ class HUD {
     if (refreshOnly) {
       this.pokerEyeMenu.querySelector("#PokerEyePlus-detailsPanel").innerHTML =
         detailsPanel;
+      if (this.isVisible) this.pokerEyeMenu.classList.remove("hidden");
+      else this.pokerEyeMenu.classList.add("hidden");
       return;
     }
 
@@ -644,7 +672,7 @@ class PokerTable {
     }
 
     this.board = [];
-    if (this.firstHandDealt) this.numHandsDealt++;
+    this.numHandsDealt++;
 
     this.totalPot = undefined;
     this.mainPot = undefined;
@@ -1091,7 +1119,7 @@ const formatCard = (unformattedCard) => {
 
   const suit = Math.floor(number / 13);
   return `${
-    ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"][
+    ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"][
       number % 13
     ]
   }${"cdhs"[suit]}`;
