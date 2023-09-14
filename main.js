@@ -370,8 +370,8 @@ class HUD {
     detailsPanelContainer.className = `flex flex-col gap-1 p-2 text-sm`;
     detailsPanelContainer.innerHTML = detailsPanel;
 
-    // const closeMenuButton = container.getElementById("PokerEyePlus-close-menu");
-    // closeMenuButton.addEventListener("click", () => this.toggleVisibility());
+    const closeMenuButton = container.querySelector("#PokerEyePlus-close-menu");
+    closeMenuButton.addEventListener("click", () => this.toggleVisibility());
 
     container.appendChild(detailsPanelContainer);
     menu.appendChild(container);
