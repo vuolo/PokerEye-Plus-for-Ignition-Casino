@@ -334,7 +334,7 @@ class HUD {
         <span class="text-xs opacity-[75%]">Balance</span>
         <span class="font-bold">${this.pokerTable.currencySymbol}${roundFloat(
       myPlayer.balance || 0
-    )}</span>
+    )} ${myPlayer.numBigBlinds ? `(${myPlayer.numBigBlinds} BB)` : ""}</span>
       </div>
 
       <!-- Position -->
@@ -545,6 +545,7 @@ class Player {
     this.isMyPlayer = this.dom.classList.contains("myPlayer");
 
     this.balance = undefined;
+    this.numBigBlinds = undefined;
     this.holeCards = [];
     this.actionHistory = [];
     this.isTurnToAct = false;
@@ -601,6 +602,11 @@ class Player {
       this.actionHistory[this.actionHistory.length - 1].action ===
         "NEW PLAYER");
 
+  getNumBigBlinds = () =>
+    this.pokerTable.blinds.big !== undefined
+      ? roundFloat(this.balance / this.pokerTable.blinds.big, 2, false)
+      : null;
+
   getBalance() {
     const previousBalance = this.balance;
 
@@ -613,11 +619,11 @@ class Player {
     )?.innerText;
     const balance = parseCurrency(balanceText);
     this.balance = balance;
+    this.numBigBlinds = this.getNumBigBlinds();
 
     // Check for the currency symbol
-    if (isNaN(balanceText.charAt(0))) {
-      this.pokerTable.currencySymbol = balanceText.charAt(0);
-      balanceText = balanceText.slice(1);
+    if (isNaN(balanceText?.charAt(0))) {
+      this.pokerTable.currencySymbol = balanceText?.charAt(0) || "";
     } else this.pokerTable.currencySymbol = "";
 
     // Log the balance if it has changed
@@ -771,6 +777,11 @@ class PokerTable {
     this.firstHandDealt = false;
     this.isClosing = false;
 
+    this.blinds = {
+      small: undefined,
+      big: undefined,
+    };
+    this.gameType = undefined;
     this.board = [];
     this.numHandsDealt = 0;
     this.players = new Map();
@@ -810,6 +821,7 @@ class PokerTable {
       this.doc = this.iframe.contentWindow?.document;
 
       return {
+        blinds: this.getBlinds(),
         board: this.getBoard(),
         players: this.getPlayers(),
         totalPot: this.getTotalPot(),
@@ -847,6 +859,54 @@ class PokerTable {
 
     this.stopSyncingTableInfo();
     this.syncTableInfo(false);
+  }
+
+  getBlinds() {
+    // To get the header container DOM:
+    //  1. Get the id="root" <div> tag
+    //  2. Get the first <div> tag within the root with class "mainContent", then get the innerText of that <div>
+    //   • The result will be something like "2/4 No Limit Hold'em", where "2" is the small blind and "4" is the big blind
+    //  3. Parse the blinds text to a number and store it in a new Table instance
+    const tableDescription = this.doc
+      ?.querySelector("#root")
+      ?.querySelector(".mainContent")?.innerText;
+    this.tableDescription = tableDescription;
+    if (!tableDescription) return;
+
+    // Parse the blinds text to two numbers separated by "/"
+    //  1. Split the blinds text by "/", then make the small blind be the left side of the "/" and the big blind the right side of the "/" (but before the first " "), where after the first " " is the game type (e.g. "No Limit Hold'em")
+    const smallBlind = parseCurrency(tableDescription.split("/")[0]);
+    const bigBlind = parseCurrency(
+      tableDescription.split("/")[1].split(" ")[0]
+    );
+    const gameType = tableDescription.split("/")[1].split(" ")[1];
+
+    // Update the blinds if they have changed
+    if (
+      smallBlind !== this.blinds.small ||
+      bigBlind !== this.blinds.big ||
+      gameType !== this.gameType
+    ) {
+      const getUpdatedBlindsMessage = () =>
+        `${this.currencySymbol}${roundFloat(smallBlind || 0)}/${
+          this.currencySymbol
+        }${roundFloat(bigBlind || 0)}`;
+
+      logMessage(
+        `${this.logMessagePrefix}${
+          (smallBlind !== this.blinds.small || bigBlind !== this.blinds.big) &&
+          gameType === this.gameType
+            ? `Blinds updated: ${getUpdatedBlindsMessage}`
+            : gameType !== this.gameType
+            ? `Game type updated: ${gameType}`
+            : `Blinds and game type updated: ${getUpdatedBlindsMessage} · ${gameType}`
+        }`,
+        { color: "mediumpurple" }
+      );
+      this.blinds.small = smallBlind;
+      this.blinds.big = bigBlind;
+      this.gameType = gameType;
+    }
   }
 
   getBoard() {
