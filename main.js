@@ -460,7 +460,9 @@ class HUD {
       <!-- Position -->
       <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
         <span class="text-xs opacity-[75%]">Position</span>
-        <span class="font-bold">${myPlayer.position || "SITTING OUT"}</span>
+        <span class="font-bold${
+          myPlayer.position === null ? " opacity-[75%]" : ""
+        }">${myPlayer.position || "SITTING OUT..."}</span>
       </div>
 
       <!-- Hand -->
@@ -729,16 +731,15 @@ class Player {
 
   isSittingOut = () => {
     const currentAction = this.getCurrentAction();
-    console.log("currentAction", currentAction);
 
-    this.actionHistory.length === 0
+    return this.actionHistory.length === 0
       ? !currentAction
         ? true
-        : currentAction?.action === "SITTING OUT"
+        : currentAction?.action === "SITTING OUT..."
       : this.actionHistory[this.actionHistory.length - 1].action ===
-          "SITTING OUT" ||
-        this.actionHistory[this.actionHistory.length - 1].action ===
-          "NEW PLAYER";
+          "SITTING OUT..." ||
+          this.actionHistory[this.actionHistory.length - 1].action ===
+            "NEW PLAYER";
   };
 
   getNumBigBlinds = () =>
@@ -829,7 +830,7 @@ class Player {
     return this.holeCards;
   }
 
-  // Get a list of all player actions (e.g. "FOLD", "CHECK", "CALL", "BET", "RAISE", "ALL-IN", "ALL-IN · x%", "SITTING OUT", "POST SB", "POST BB", "x seconds left to make a move...", "NEW PLAYER", "DONT SHOW") along with the action's timestamp (e.g. "2021-01-01 00:00:00.000")
+  // Get a list of all player actions (e.g. "FOLD", "CHECK", "CALL", "BET", "RAISE", "ALL-IN", "ALL-IN · x%", "SITTING OUT...", "POST SB", "POST BB", "x seconds left to make a move...", "NEW PLAYER", "DONT SHOW") along with the action's timestamp (e.g. "2021-01-01 00:00:00.000")
   getCurrentAction() {
     // To get the player's current action DOM:
     //  1. Get the <div> tag with attribute "data-qa" with value "playerTag" or "myPlayerTag"
@@ -902,7 +903,9 @@ class Player {
       // Check if the action is just a number (e.g. "7" for "7 seconds left to make a move")
       !isNaN(action) ? `${action} seconds left to make a move...` : action;
     return formattedAction === " seconds left to make a move..."
-      ? "SITTING OUT"
+      ? "SITTING OUT..."
+      : formattedAction === "SITTING OUT"
+      ? "SITTING OUT..."
       : formattedAction;
   }
 }
@@ -1344,7 +1347,32 @@ class PokerTable {
           .filter((player) => buttonPlayer.seatNumber !== player.seatNumber)
           .filter((player) => {
             if (player.isSittingOut()) {
-              // Check if the player was already marked as sat out
+              // TODO: Check if the player IS IN THE SMALL BLIND SPOT, BLOCKING THE SMALL BLIND FROM POSTING THE BLIND!
+              // • In this very specific circumstance, only if the player is in the small blind spot and JUST sat out from doing ONE hand as the big blind, then we can mark the player as "SB (SITTING OUT), otherwise, it messes up the other players' positions (BB would be marked as SB, UTG would be marked as BB, and UTG+1/CO/HJ/LJ would be marked as UTG. These are the only possible messed up positions, but it's still a problem, so we have to fix it)
+              // TODO: the reason why this is very difficult is because we need to see if the user JUST did the BB then sat out.. We can do this with this.actionHistory!
+              // if (
+              //   buttonPlayer.seatNumber + 1 === player.seatNumber ||
+              //   (buttonPlayer.seatNumber ===
+              //     Math.max(
+              //       ...Array.from(this.players.values()).map(
+              //         (player) => player.seatNumber
+              //       )
+              //     ) &&
+              //     player.seatNumber === 1)
+              // ) {
+              //   // Mark the player as sitting out in the small blind spot
+              //   player.position = `SB (SITTING OUT)`;
+              //   logMessage(
+              //     `${player.logMessagePrefix}Player is now sitting out in the small blind spot (preventing the small blind from posting the blind).`,
+              //     {
+              //       color: player.isMyPlayer ? "goldenrod" : "lightgray",
+              //     }
+              //   );
+
+              //   return true;
+              // }
+
+              // Mark the player as sitting out
               player.position = null;
               logMessage(
                 `${player.logMessagePrefix}Player is now sitting out.`,
@@ -1392,7 +1420,9 @@ class PokerTable {
 
           switch (i) {
             case 0:
-              player.position = "SB";
+              player.position = `SB${
+                player.isSittingOut() ? " (SITTING OUT)" : ""
+              }`;
               break;
             case 1:
               player.position = "BB";
