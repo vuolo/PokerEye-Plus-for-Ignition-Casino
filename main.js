@@ -463,8 +463,8 @@ class HUD {
   }
 
   isMenuOffScreen() {
-    let winX = this.tableWrapper.offsetWidth;
-    let winY = this.tableWrapper.offsetHeight;
+    let winX = this.root.offsetWidth;
+    let winY = this.root.offsetHeight;
     let displayX = parseInt(this.pokerEyeMenu.style.left, 10);
     let displayY = parseInt(this.pokerEyeMenu.style.top, 10);
 
@@ -472,7 +472,7 @@ class HUD {
   }
 
   resetMenuPosition() {
-    let winY = this.tableWrapper.offsetHeight;
+    let winY = this.root.offsetHeight;
     let seatRect = this.player.dom.getBoundingClientRect();
 
     let horizontalPosition =
