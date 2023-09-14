@@ -418,48 +418,44 @@ class HUD {
   }
 
   makeMenuDraggable() {
-    try {
-      const dragZone = this.pokerEyeMenu.querySelector(
-        "#PokerEyePlus-menu-dragZone"
-      );
+    const dragZone = this.pokerEyeMenu.querySelector(
+      "#PokerEyePlus-menu-dragZone"
+    );
 
-      let x1 = 0;
-      let y1 = 0;
-      let x2 = 0;
-      let y2 = 0;
+    let x1 = 0;
+    let y1 = 0;
+    let x2 = 0;
+    let y2 = 0;
 
-      function dragMouseDown(e) {
-        e = e || this.doc.defaultView.event;
-        e.preventDefault();
+    function dragMouseDown(e) {
+      e = e || this.doc.defaultView.event;
+      e.preventDefault();
 
-        x2 = e.clientX;
-        y2 = e.clientY;
-        this.doc.onmouseup = closeDrag.bind(this);
-        this.doc.onmousemove = mouseDrag.bind(this);
-      }
-
-      function mouseDrag(e) {
-        e = e || this.game.doc.defaultView.event;
-        e.preventDefault();
-
-        x1 = x2 - e.clientX;
-        y1 = y2 - e.clientY;
-        x2 = e.clientX;
-        y2 = e.clientY;
-
-        this.pokerEyeMenu.style.left = this.pokerEyeMenu.offsetLeft - x1 + "px";
-        this.pokerEyeMenu.style.top = this.pokerEyeMenu.offsetTop - y1 + "px";
-      }
-
-      function closeDrag() {
-        this.doc.onmouseup = null;
-        this.doc.onmousemove = null;
-      }
-
-      dragZone.onmousedown = dragMouseDown.bind(this);
-    } catch (error) {
-      console.error(error);
+      x2 = e.clientX;
+      y2 = e.clientY;
+      this.doc.onmouseup = closeDrag.bind(this);
+      this.doc.onmousemove = mouseDrag.bind(this);
     }
+
+    function mouseDrag(e) {
+      e = e || this.game.doc.defaultView.event;
+      e.preventDefault();
+
+      x1 = x2 - e.clientX;
+      y1 = y2 - e.clientY;
+      x2 = e.clientX;
+      y2 = e.clientY;
+
+      this.pokerEyeMenu.style.left = this.pokerEyeMenu.offsetLeft - x1 + "px";
+      this.pokerEyeMenu.style.top = this.pokerEyeMenu.offsetTop - y1 + "px";
+    }
+
+    function closeDrag() {
+      this.doc.onmouseup = null;
+      this.doc.onmousemove = null;
+    }
+
+    dragZone.onmousedown = dragMouseDown.bind(this);
   }
 
   isMenuOffScreen() {
