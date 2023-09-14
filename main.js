@@ -9,6 +9,10 @@ const TAILWIND_CSS_CUSTOM_CONFIG = {
   // prefix: 'tw-',
   important: true,
 };
+const INITIAL_MENU_POSITION = {
+  left: "20px",
+  top: "20px",
+};
 
 // TODO: To get postflop oods on a given hand, in any situation:
 //  1. Create a Node.js script that opens a headless browser window to https://www.pokernews.com/poker-tools/poker-odds-calculator.htm
@@ -96,8 +100,12 @@ class HUD {
   }
 
   init() {
+    this.id = generateUUID();
     this.isCreated = undefined;
     this.isVisible = ENABLE_HUD_VISIBILITY_BY_DEFAULT;
+
+    this.myPlayer = undefined;
+    this.menuPosition = INITIAL_MENU_POSITION;
 
     logMessage(`${this.pokerTable.logMessagePrefix}Initializing HUD...`, {
       color: "cyan",
@@ -282,10 +290,10 @@ class HUD {
   // PokerEye+ main menu (only shows when this.isVisible)
   // An easy-to-use Chrome extension that records & calculates statistics while playing on Ignition Casino's Online Poker in your browser.
   createPokerEyeMenu(refreshOnly = false) {
-    const player = this.pokerTable.players.get(
+    const myPlayer = this.pokerTable.players.get(
       this.pokerTable.myPlayerSeatNumber
     );
-    this.player = player;
+    this.myPlayer = myPlayer;
 
     const detailsPanel = `
       <!-- Most Recent Action -->
@@ -295,9 +303,9 @@ class HUD {
             <i class="icon-component icon-hand-history opacity-[75%]"></i>
           </span>
           <span class="ml-1.5 text-xs font-bold">${
-            player.actionHistory.length > 0
-              ? `${player.actionHistory[
-                  player.actionHistory.length - 1
+            myPlayer.actionHistory.length > 0
+              ? `${myPlayer.actionHistory[
+                  myPlayer.actionHistory.length - 1
                 ].action.replace(
                   " seconds left to make a move...",
                   " second(s) left..."
@@ -306,9 +314,10 @@ class HUD {
           }</span>
         </div>
         <span class="text-[0.6rem]">${
-          player.actionHistory.length > 0
+          myPlayer.actionHistory.length > 0
             ? `${convertFormattedTimestampToAgo(
-                player.actionHistory[player.actionHistory.length - 1].timestamp
+                myPlayer.actionHistory[myPlayer.actionHistory.length - 1]
+                  .timestamp
               )}`
             : `<span class="opacity-[75%]">...</span>`
         }</span>
@@ -323,26 +332,23 @@ class HUD {
       <!-- Balance -->
       <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
         <span class="text-xs opacity-[75%]">Balance</span>
-        <span class="font-bold">$${roundFloat(
-          player.balance || 0,
-          2,
-          true,
-          false
-        )}</span>
+        <span class="font-bold">${this.pokerTable.currencySymbol}${roundFloat(
+      myPlayer.balance || 0
+    )}</span>
       </div>
 
       <!-- Position -->
       <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
         <span class="text-xs opacity-[75%]">Position</span>
-        <span class="font-bold">${player.position || "SITTING OUT"}</span>
+        <span class="font-bold">${myPlayer.position || "SITTING OUT"}</span>
       </div>
 
       <!-- Hand -->
       <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
         <span class="text-xs opacity-[75%]">Hand</span>
         <span class="font-bold">${
-          player.holeCards.length > 0
-            ? player.holeCards.map((card) => this.renderCard(card)).join(" ")
+          myPlayer.holeCards.length > 0
+            ? myPlayer.holeCards.map((card) => this.renderCard(card)).join(" ")
             : `<span class="opacity-[75%]">...</span>`
         }</span>
       </div>
@@ -384,8 +390,8 @@ class HUD {
     const menu = this.doc.createElement("div");
     menu.id = "PokerEyePlus-menu";
     menu.className = `absolute min-w-[15rem] bg-white rounded-md overflow-hidden text-[#1F2E35] z-[999999]`;
-    menu.left = "160px";
-    menu.top = "200px";
+    menu.style.left = this.menuPosition.left;
+    menu.style.top = this.menuPosition.top;
 
     const container = this.doc.createElement("div");
     container.className = `flex flex-col w-full`;
@@ -450,8 +456,11 @@ class HUD {
       x2 = e.clientX;
       y2 = e.clientY;
 
-      this.pokerEyeMenu.style.left = this.pokerEyeMenu.offsetLeft - x1 + "px";
-      this.pokerEyeMenu.style.top = this.pokerEyeMenu.offsetTop - y1 + "px";
+      const left = this.pokerEyeMenu.offsetLeft - x1 + "px";
+      const top = this.pokerEyeMenu.offsetTop - y1 + "px";
+      this.pokerEyeMenu.style.left = left;
+      this.pokerEyeMenu.style.top = top;
+      this.menuPosition = { left, top };
     }
 
     function closeDrag() {
@@ -463,24 +472,29 @@ class HUD {
   }
 
   isMenuOffScreen() {
-    let winX = this.root.offsetWidth;
-    let winY = this.root.offsetHeight;
-    let displayX = parseInt(this.pokerEyeMenu.style.left, 10);
-    let displayY = parseInt(this.pokerEyeMenu.style.top, 10);
+    let rootWidth = this.root.offsetWidth;
+    let rootHeight = this.root.offsetHeight;
+    let menuX = parseInt(this.pokerEyeMenu.style.left, 10);
+    let menuY = parseInt(this.pokerEyeMenu.style.top, 10);
 
-    return displayX > winX || displayY > winY;
+    return menuX > rootWidth || menuY > rootHeight;
   }
 
   resetMenuPosition() {
-    let winY = this.root.offsetHeight;
-    let seatRect = this.player.dom.getBoundingClientRect();
+    let rootHeight = this.root.offsetHeight;
+    let seatRect = this.myPlayer?.dom?.getBoundingClientRect();
+    if (!seatRect) {
+      this.pokerEyeMenu.style.left = INITIAL_MENU_POSITION.left;
+      this.pokerEyeMenu.style.top = INITIAL_MENU_POSITION.top;
+      return;
+    }
 
     let horizontalPosition =
       (seatRect.left * this.getTableZoom()).toString() + "px";
     this.pokerEyeMenu.style.left = horizontalPosition;
 
     this.pokerEyeMenu.style.top =
-      seatRect.bottom * this.getTableZoom() > winY / 2
+      seatRect.bottom * this.getTableZoom() > rootHeight / 2
         ? (seatRect.bottom * this.getTableZoom()).toString() + "px"
         : (seatRect.top * this.getTableZoom()).toString() + "px";
   }
@@ -518,15 +532,16 @@ class HUD {
 }
 
 class Player {
-  constructor(dom, seatNumber, parentTable) {
+  constructor(dom, seatNumber, pokerTable) {
     this.dom = dom;
     this.seatNumber = seatNumber;
-    this.parentTable = parentTable;
+    this.pokerTable = pokerTable;
 
     this.init();
   }
 
   init() {
+    this.id = generateUUID();
     this.isMyPlayer = this.dom.classList.contains("myPlayer");
 
     this.balance = undefined;
@@ -535,7 +550,7 @@ class Player {
     this.isTurnToAct = false;
     this.position = null;
 
-    this.logMessagePrefix = `(Table #${this.parentTable.slotNumber}, Seat #${
+    this.logMessagePrefix = `(Table #${this.pokerTable.slotNumber}, Seat #${
       this.seatNumber
     }${this.isMyPlayer ? " - you" : ""}): `;
 
@@ -599,16 +614,24 @@ class Player {
     const balance = parseCurrency(balanceText);
     this.balance = balance;
 
+    // Check for the currency symbol
+    if (isNaN(balanceText.charAt(0))) {
+      this.pokerTable.currencySymbol = balanceText.charAt(0);
+      balanceText = balanceText.slice(1);
+    } else this.pokerTable.currencySymbol = "";
+
     // Log the balance if it has changed
     if (this.balance !== undefined && previousBalance !== this.balance)
       logMessage(
-        `${this.logMessagePrefix}Balance updated: $${roundFloat(
-          this.balance || 0
-        )}${
+        `${this.logMessagePrefix}Balance updated: ${
+          this.pokerTable.currencySymbol
+        }${roundFloat(this.balance || 0)}${
           previousBalance !== undefined
-            ? ` (net: $${roundFloat(
+            ? ` (net: ${this.pokerTable.currencySymbol}${roundFloat(
                 this.balance - (previousBalance || 0)
-              )}, previous: $${roundFloat(previousBalance || 0)})`
+              )}, previous: ${this.pokerTable.currencySymbol}${roundFloat(
+                previousBalance || 0
+              )})`
             : ""
         }`,
         { color: this.isMyPlayer ? "goldenrod" : "lightgray" }
@@ -743,6 +766,7 @@ class PokerTable {
   }
 
   init() {
+    this.id = generateUUID();
     this.doc = this.iframe.contentWindow?.document;
     this.firstHandDealt = false;
     this.isClosing = false;
@@ -750,6 +774,7 @@ class PokerTable {
     this.board = [];
     this.numHandsDealt = 0;
     this.players = new Map();
+    this.currencySymbol = "";
 
     this.totalPot = undefined;
     this.mainPot = undefined;
@@ -916,7 +941,9 @@ class PokerTable {
         `${this.logMessagePrefix}Players: ${Array.from(this.players.values())
           .map(
             (player) =>
-              `(#${player.seatNumber}) $${roundFloat(player.balance || 0)}`
+              `(#${player.seatNumber}) ${this.currencySymbol}${roundFloat(
+                player.balance || 0
+              )}`
           )
           .join(" | ")}`,
         { color: "orangered" }
@@ -952,13 +979,15 @@ class PokerTable {
     // Update the total pot if it has changed
     if (totalPot !== undefined && this.totalPot !== totalPot) {
       logMessage(
-        `${this.logMessagePrefix}Total pot updated: $${roundFloat(
-          totalPot || 0
-        )}${
+        `${this.logMessagePrefix}Total pot updated: ${
+          this.currencySymbol
+        }${roundFloat(totalPot || 0)}${
           this.totalPot !== undefined
-            ? ` (net: $${roundFloat(
+            ? ` (net: ${this.currencySymbol}${roundFloat(
                 totalPot - (this.totalPot || 0)
-              )}, previous: $${roundFloat(this.totalPot || 0)})`
+              )}, previous: ${this.currencySymbol}${roundFloat(
+                this.totalPot || 0
+              )})`
             : ""
         }`,
         { color: "mediumseagreen" }
@@ -978,13 +1007,15 @@ class PokerTable {
     // Update the main pot if it has changed
     if (mainPot !== undefined && this.mainPot !== mainPot) {
       logMessage(
-        `${this.logMessagePrefix}Main pot updated: $${roundFloat(
-          mainPot || 0
-        )}${
+        `${this.logMessagePrefix}Main pot updated: ${
+          this.currencySymbol
+        }${roundFloat(mainPot || 0)}${
           this.mainPot !== undefined
-            ? ` (net: $${roundFloat(
+            ? ` (net: ${this.currencySymbol}${roundFloat(
                 mainPot - (this.mainPot || 0)
-              )}, previous: $${roundFloat(this.mainPot || 0)})`
+              )}, previous: ${this.currencySymbol}${roundFloat(
+                this.mainPot || 0
+              )})`
             : ""
         }`,
         { color: "mediumseagreen" }
@@ -1009,11 +1040,15 @@ class PokerTable {
         `${this.logMessagePrefix}Side pots updated: ${sidePots
           .map(
             (pot, potIndex) =>
-              `(#${potIndex + 1}) $${roundFloat(pot || 0)}${
+              `(#${potIndex + 1}) ${this.currencySymbol}${roundFloat(
+                pot || 0
+              )}${
                 this.sidePots !== undefined
-                  ? ` (net: $${roundFloat(
+                  ? ` (net: ${this.currencySymbol}${roundFloat(
                       pot - (this.sidePots[potIndex] || 0)
-                    )}, previous: $${roundFloat(this.sidePots[potIndex] || 0)})`
+                    )}, previous: ${this.currencySymbol}${roundFloat(
+                      this.sidePots[potIndex] || 0
+                    )})`
                   : ""
               }`
           )
@@ -1416,6 +1451,29 @@ function convertFormattedTimestampToAgo(formattedTimestamp) {
     return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
   else if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
   else return `${Math.floor(hours / 24)} days ago`;
+}
+
+function generateRandom16BitNumber() {
+  return Math.floor((1 + Math.random()) * 0x10000)
+    .toString(16)
+    .substring(1);
+}
+
+function generateUUID() {
+  return (
+    generateRandom16BitNumber() +
+    generateRandom16BitNumber() +
+    "-" +
+    generateRandom16BitNumber() +
+    "-" +
+    generateRandom16BitNumber() +
+    "-" +
+    generateRandom16BitNumber() +
+    "-" +
+    generateRandom16BitNumber() +
+    generateRandom16BitNumber() +
+    generateRandom16BitNumber()
+  );
 }
 
 // attribution.js
