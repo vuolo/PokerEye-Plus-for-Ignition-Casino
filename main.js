@@ -148,8 +148,12 @@ class HUD {
       this.tableWrapper = Array.from(this.doc.querySelectorAll("div")).find(
         (div) => div.style.display === "contents"
       );
-      this.tableContainer = Array.from(this.tableWrapper.children).slice(-2)[0];
-      this.footerContainer = Array.from(this.tableWrapper.children).pop();
+      this.tableContainer = Array.from(this.tableWrapper.children)
+        .filter((child) => child.id !== "PokerEyePlus-menu")
+        .slice(-2)[0];
+      this.footerContainer = Array.from(this.tableWrapper.children)
+        .filter((child) => child.id !== "PokerEyePlus-menu")
+        .pop();
 
       // Get Ignition's switch styling
       // e.g. <div class="f1d4v63a f10grhtg"><div class="f1a9vlrz"><div class="f1rgt9db"><div class="f1wig6fb"><div class="fg407x7"></div></div><div>Mute side notifications</div></div></div><i class="icon-component icon-send-message fqm6o4r Desktop smile" style="color: rgb(255, 255, 255); cursor: pointer;"></i></div>
@@ -170,18 +174,14 @@ class HUD {
       if (!this.isCreated) this.createHud();
       else {
         // Refresh the toggleVisibilitySwitch if it disappeared
-        if (
-          !this.footerContainer.querySelector(
-            "#PokerEyePlus-toggleVisibilitySwitch"
-          )
-        ) {
-          removeHUD({ toggleVisibilitySwitch: true });
+        if (!this.doc.querySelector("#PokerEyePlus-toggleVisibilitySwitch")) {
+          this.removeHUD({ toggleVisibilitySwitch: true });
           this.createToggleVisibilitySwitch();
         }
 
         // Refresh the pokerEyeMenu if it disappeared
-        if (!this.doc.body.querySelector("#PokerEyePlus-menu")) {
-          removeHUD({ pokerEyeMenu: true });
+        if (!this.doc.querySelector("#PokerEyePlus-menu")) {
+          this.removeHUD({ pokerEyeMenu: true });
           this.createPokerEyeMenu();
         }
 
@@ -379,7 +379,9 @@ class HUD {
 
     const menu = this.doc.createElement("div");
     menu.id = "PokerEyePlus-menu";
-    menu.className = `absolute left-[1rem] top-[10%] min-w-[15rem] bg-white rounded-md overflow-hidden text-[#1F2E35]`;
+    menu.className = `absolute min-w-[15rem] bg-white rounded-md overflow-hidden text-[#1F2E35] z-[999999]`;
+    menu.left = "160px";
+    menu.top = "200px";
 
     const container = this.doc.createElement("div");
     container.className = `flex flex-col w-full`;
@@ -412,7 +414,7 @@ class HUD {
     this.pokerEyeMenu = menu;
     this.makeMenuDraggable();
 
-    this.doc.body.appendChild(menu);
+    this.tableWrapper.appendChild(menu);
   }
 
   makeMenuDraggable() {
