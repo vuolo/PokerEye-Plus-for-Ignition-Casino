@@ -84,6 +84,10 @@ const TAILWIND_CSS_CUSTOM_CONFIG = {
 //   • The HUD should already be listening for these changes, so it should update automatically and display the best preflop move on the screen!
 // ----------------------------------------------------------------------------------------------------------------------------------------------
 
+// TODO: Add a switch to toggle balances as big blinds (BB) or actual currency ($)
+//  1. TODO: ...
+// ----------------------------------------------------------------------------------------------------------------------------------------------
+
 class HUD {
   constructor(pokerTable) {
     this.pokerTable = pokerTable;
@@ -459,8 +463,8 @@ class HUD {
   }
 
   isMenuOffScreen() {
-    let winX = this.root.offsetWidth;
-    let winY = this.root.offsetHeight;
+    let winX = this.tableWrapper.offsetWidth;
+    let winY = this.tableWrapper.offsetHeight;
     let displayX = parseInt(this.pokerEyeMenu.style.left, 10);
     let displayY = parseInt(this.pokerEyeMenu.style.top, 10);
 
@@ -468,7 +472,7 @@ class HUD {
   }
 
   resetMenuPosition() {
-    let winY = this.root.offsetHeight;
+    let winY = this.tableWrapper.offsetHeight;
     let seatRect = this.player.dom.getBoundingClientRect();
 
     let horizontalPosition =
