@@ -10,6 +10,80 @@ const TAILWIND_CSS_CUSTOM_CONFIG = {
   important: true,
 };
 
+// TODO: To get postflop oods on a given hand, in any situation:
+//  1. Create a Node.js script that opens a headless browser window to https://www.pokernews.com/poker-tools/poker-odds-calculator.htm
+//   1.1 Once loaded, sync (setInterval search for) the <iframe> tag with id="oddsCalculatorIframe" and store it's "src" attribute in a variable.
+//  2. Open a new headless iframe of the src from step 1.1
+//   2.1 Once loaded, create a new instance of a class "postflopOddsCalc" and pass this.document as the argument (must be already loaded and ready to be passed in) and store it as this.doc within the class.
+//  3. Create a function in the PokerTable class (in this script, not the Node.js script) that parses the board, number of other active players, and the user's hole cards to the format that the calculator expects as input
+//   • Example calculator input: "8h|9c|3|5d|7c|5h|Tc||1|1", where the first elements (separated by "|") are the user's hole cards, the next element is the number of other active players, then the 5 cards on the board, the last two elements are usually "1" and "1" (not sure what they are for, so ignore them)
+//  4. Send the parsed input from step 3 to the calculator (communicating by localhost API hosted by the Node.js script) and wait for the calculator to finish calculating the percentages
+//   4.1 (for the Node.js script) The API URL to fetch data from is `https://th.odds.pokernews.com/game-probs?input=${parsedInput}`,
+//       where input is the translated hole cards and board from step 4 in the form of "8h|9c|3|5d|7c|5h|Tc||1|1",
+//       then url-encoded to be "8h%7C9c%7C3%7C5d%7C7c%7C5h%7CTc%7C%7C1%7C1"
+//         • Example fetch script:
+//         ```javascript
+//           let url = `https://th.odds.pokernews.com/game-probs?input=${parsedInput}`,
+//
+//           // Fetch options
+//           let options = {
+//             headers: {
+//               "accept": "application/json, text/plain, */*",
+//               "accept-language": "en-US,en;q=0.9",
+//               "sec-ch-ua": "\"Not)A;Brand\";v=\"24\", \"Chromium\";v=\"116\"",
+//               "sec-ch-ua-mobile": "?0",
+//               "sec-ch-ua-platform": "\"macOS\"",
+//               "sec-fetch-dest": "empty",
+//               "sec-fetch-mode": "no-cors",
+//             },
+//             referrer: "https://th.odds.pokernews.com",
+//             referrerPolicy: "strict-origin-when-cross-origin",
+//             body: null,
+//             method: "GET",
+//             mode: "no-cors", // Set the mode to 'no-cors' to disable CORS
+//             credentials: "include"
+//           };
+//
+//           // Calculate the percentages and return the response
+//           fetch(url, options)
+//             .then(response => response.text())
+//             .then(body => {
+//               console.log(body);
+//               TODO: return the response...
+//              })
+//             .catch(error => console.error('Error:', error));
+//        ```
+//        • Example response:
+//        ```xml
+//          <?xml
+//           version="1.0" encoding="utf-8"?>
+//           <d>
+//               <win>18.45|80.23</win>
+//               <tie>1.31|4.43</tie>
+//               <r>|52.13|26.1|4.36|17.41||||;|9.41|53.67|15.81|3.23|2.02|14.96|0.9|</r>
+//               <c>1|1|0|1|1|1|0|1|1|1|0|1|91|92|81|92|1|1||1|33|32||32|30||26|29|1|1||1|91|92|82|91|1||0||0|0|0|0|0|0|0|0|0|0|0|0</c>
+//               <time>0.116069078445</time>
+//           </d>
+//        ```
+//         • The first number in the "win" tag is the win percentage for the user's player, the second number is the win percentage for the other players (separator is "|")
+//         • The first number in the "tie" tag is the tie percentage for the user's player, the second number is the tie percentage for the other players (separator is "|")
+//         • The "r" tag is the percentages for each possible hand rank (separated by "|" and the user percentages are to the left of ";" and the other player's percentages are to the right of ";" ) it is in the following order: HIGH CARD | ONE PAIR | TWO PAIR | THREE-OF-A-KIND | STRAIGHT | FLUSH | FULL HOUSE | FOUR-OF-A-KIND | STRAIGHT FLUSH
+//         • The "c" is unknown as of now... so ignore it
+//         • The "time" tag is the time it took to calculate the percentages (in seconds)
+//  5. Parse the response, store it in the pokerTable instance accordingly
+//   • The HUD should already be listening for these changes, so it should update automatically and display the percentages on the screen!
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+// TODO: To get the best preflop move on a given hand, in any situation (up to 4-bets):
+//  1. Add another API endpoint to the Node.js script we wrote for postflop odds (see above) but for preflop odds (/calculate-preflop-odds)
+//   1.1 The logic for this is very difficult to explain shortly... but use the /data folder and the logic from /preflop-academy to figure out how to calculate the best preflp move
+//  2. Translate the hole cards and board to the format that the calculator expects as input (see above)
+//    2.1 Format the hand to show "o" for offsuit and "s" for suited (e.g. "AKo" or "AKs")
+//    2.2 Then, pass the formmatted translated hole cards and the player's position and circumstance (whoever raised last, and whether it was a normal raise, 3-bet, or 4-bet (e.g. { position: "BTN", action: "RAISE" }, or { position: "CO", action: "3-BET" }, or { position: "SB", action: "4-BET" })) to the API endpoint we created in step 1
+//  3. Parse the response, store it in the pokerTable instance accordingly
+//   • The HUD should already be listening for these changes, so it should update automatically and display the best preflop move on the screen!
+// ----------------------------------------------------------------------------------------------------------------------------------------------
+
 class HUD {
   constructor(pokerTable) {
     this.pokerTable = pokerTable;
@@ -104,6 +178,15 @@ class HUD {
           removeHUD({ toggleVisibilitySwitch: true });
           this.createToggleVisibilitySwitch();
         }
+
+        // Refresh the pokerEyeMenu if it disappeared
+        if (!this.footerContainer.querySelector("#PokerEyePlus-menu")) {
+          removeHUD({ pokerEyeMenu: true });
+          this.createPokerEyeMenu();
+        }
+
+        // Refresh the HUD data
+        this.createPokerEyeMenu(true);
       }
     } catch (error) {
       // console.error(error);
@@ -124,6 +207,7 @@ class HUD {
     this.importTailwindCSS();
 
     this.createToggleVisibilitySwitch();
+    this.createPokerEyeMenu();
 
     logMessage(
       `${this.pokerTable.logMessagePrefix}HUD created. Click the switch to toggle visibility.`,
@@ -132,10 +216,14 @@ class HUD {
     this.isCreated = true;
   }
 
-  removeHUD(options = { toggleVisibilitySwitch: true }) {
+  removeHUD(options = { toggleVisibilitySwitch: true, pokerEyeMenu: true }) {
     if (options.toggleVisibilitySwitch)
       this.doc
         ?.querySelectorAll("#PokerEyePlus-toggleVisibilitySwitch")
+        ?.forEach((node) => node.remove());
+    if (options.pokerEyeMenu)
+      this.doc
+        ?.querySelectorAll("#PokerEyePlus-menu")
         ?.forEach((node) => node.remove());
   }
 
@@ -177,6 +265,90 @@ class HUD {
       bar.classList.remove("switchedOn");
       button.classList.remove("switchedOn");
     }
+  }
+
+  // PokerEye+ main menu (only shows when this.isVisible)
+  // An easy-to-use Chrome extension that records & calculates statistics while playing on Ignition Casino's Online Poker in your browser.
+  createPokerEyeMenu(refreshOnly = false) {
+    const player = this.pokerTable.players.get(
+      this.pokerTable.myPlayerSeatNumber
+    );
+
+    const detailsPanel = `
+      <!-- Hands Dealt -->
+      <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
+        <span>Hands Dealt</span>
+        <span class="font-bold">${this.pokerTable.numHandsDealt}</span>
+      </div>
+
+      <!-- Balance -->
+      <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
+        <span>Balance</span>
+        <span class="font-bold">$${roundFloat(
+          player.balance || 0,
+          2,
+          true,
+          false
+        )}</span>
+      </div>
+
+      <!-- Position -->
+      <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
+        <span>Position</span>
+        <span class="font-bold">${player.position || "SITTING OUT"}</span>
+      </div>
+
+      <!-- Hand -->
+      <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
+        <span>Hand</span>
+        <span class="font-bold">${
+          player.holeCards.map((card) => `[${card}]`).join(" ") ||
+          `<span class="opacity-[75%]">...</span>`
+        }</span>
+      </div>
+    `;
+
+    if (refreshOnly) {
+      this.pokerEyeMenu.querySelector("#PokerEyePlus-detailsPanel").innerHTML =
+        detailsPanel;
+      return;
+    }
+
+    const menu = this.doc.createElement("div");
+    menu.id = "PokerEyePlus-menu";
+    menu.className = `absolute right-[1rem] top-[10%] min-w-[15rem] bg-white rounded-md overflow-hidden text-[#1F2E35]`;
+
+    const container = this.doc.createElement("div");
+    container.className = `flex flex-col w-full`;
+
+    const header = `
+      <div class="flex justify-between items-center shadow-2xl border-[4rem] border-b-red-300">
+        <div class="flex items-center space-x-1 pl-1">
+          <img src="https://i.imgur.com/ETaXEfg.png" alt="PokerEye+ Logo" class="h-8 w-8">
+          <h1 class="text-lg leading-[0]">PokerEye+</h1>
+        </div>
+        <div id="PokerEyePlus-close-menu" class="iconItem close p-2 bg-gray-300 cursor-pointer">
+          <i class="icon-component icon-close2"></i>
+        </div>
+      </div>
+      <!-- Divider -->
+      <div class="h-[1px] bg-[#CECED3]"></div>
+    `;
+    container.innerHTML = header;
+
+    const detailsPanelContainer = this.doc.createElement("div");
+    detailsPanelContainer.id = "PokerEyePlus-detailsPanel";
+    detailsPanelContainer.className = `flex flex-col gap-1 p-2 text-sm`;
+    detailsPanelContainer.innerHTML = detailsPanel;
+
+    // const closeMenuButton = container.getElementById("PokerEyePlus-close-menu");
+    // closeMenuButton.addEventListener("click", () => this.toggleVisibility());
+
+    container.appendChild(detailsPanelContainer);
+    menu.appendChild(container);
+    this.pokerEyeMenu = menu;
+
+    this.footerContainer.appendChild(menu);
   }
 }
 
@@ -240,6 +412,13 @@ class Player {
     this.stopSyncingPlayerInfo();
     this.syncPlayerInfo(false);
   }
+
+  isSittingOut = () =>
+    this.actionHistory.length > 0 &&
+    (this.actionHistory[this.actionHistory.length - 1].action ===
+      "SITTING OUT" ||
+      this.actionHistory[this.actionHistory.length - 1].action ===
+        "NEW PLAYER");
 
   getBalance() {
     const previousBalance = this.balance;
@@ -305,7 +484,7 @@ class Player {
         });
       else
         logMessage(
-          `${this.logMessagePrefix}Hole cards: ${this.holeCards
+          `${this.logMessagePrefix}Hole cards updated: ${this.holeCards
             .map((card) => `[${card}]`)
             .join(" ")}`,
           { color: this.isMyPlayer ? "goldenrod" : "lightblue" }
@@ -399,11 +578,11 @@ class PokerTable {
 
   init() {
     this.doc = this.iframe.contentWindow?.document;
-    this.firstHandDone = false;
+    this.firstHandDealt = false;
     this.isClosing = false;
 
     this.board = [];
-    this.numHands = 0;
+    this.numHandsDealt = 0;
     this.players = new Map();
 
     this.totalPot = undefined;
@@ -456,16 +635,16 @@ class PokerTable {
   }
 
   nextHand() {
-    if (!this.firstHandDone) {
+    if (!this.firstHandDealt) {
       // Reset activity after the first hand to prevent calculating statistics without the missing data from the first hand (e.g. if we join the table in the middle of a hand, we don't want to calculate statistics for that hand)
       for (const player of Array.from(this.players.values()))
         player.resetActionHistory();
 
-      this.firstHandDone = true;
+      this.firstHandDealt = true;
     }
 
     this.board = [];
-    if (this.firstHandDone) this.numHands++;
+    if (this.firstHandDealt) this.numHandsDealt++;
 
     this.totalPot = undefined;
     this.mainPot = undefined;
@@ -578,6 +757,11 @@ class PokerTable {
       );
     }
 
+    // Mark the user's seat number
+    this.myPlayerSeatNumber = Array.from(this.players.values()).find(
+      (player) => player.isMyPlayer
+    )?.seatNumber;
+
     return this.updatePlayerPositions();
   }
 
@@ -679,7 +863,7 @@ class PokerTable {
   // Update all player positions (e.g. "BTN", "SB", "BB", "UTG", "UTG+1", "UTG+2", "MP", "MP+1", "MP+2", "LJ", "HJ", "CO"):
   updatePlayerPositions() {
     const previousButtonPlayer = Array.from(this.players.values()).find(
-      (player) => player.position === "BTN"
+      (player) => player.position?.includes("BTN")
     );
 
     // 1. Get the player with the "BTN" position
@@ -706,7 +890,7 @@ class PokerTable {
       if (buttonVisibilityDOM?.style.visibility !== "visible") return false;
 
       // Check if the current player's position is not "BTN"
-      if (curPlayer.position !== "BTN") {
+      if (!curPlayer.position?.includes("BTN")) {
         // Okay, so the dealer chip has moved to the current player's seat, or we are just joining the table and the dealer chip is already on the current player's seat, so we have to update the player positions...
         // Let's mark this current player as the dealer ("BTN") and clear all other players' positions...
 
@@ -721,7 +905,9 @@ class PokerTable {
         );
 
         // 2. Update the current player's position to "BTN" (the dealer)
-        curPlayer.position = "BTN";
+        curPlayer.position = `BTN${
+          curPlayer.isSittingOut() ? " (SITTING OUT)" : ""
+        }`;
         logMessage(
           `${curPlayer.logMessagePrefix}Position updated: ${curPlayer.position}`,
           { color: curPlayer.isMyPlayer ? "goldenrod" : "plum" }
@@ -745,12 +931,7 @@ class PokerTable {
         const activePlayers = Array.from(this.players.values())
           .filter((player) => buttonPlayer.seatNumber !== player.seatNumber)
           .filter((player) => {
-            if (
-              player.actionHistory[player.actionHistory.length - 1].action ===
-                "SITTING OUT" ||
-              player.actionHistory[player.actionHistory.length - 1].action ===
-                "NEW PLAYER"
-            ) {
+            if (player.isSittingOut()) {
               // Check if the player was already marked as sat out
               player.position = null;
               logMessage(
@@ -877,7 +1058,8 @@ class PokerTable {
         // Log the updated positions
         for (const player of pivotedActivePlayersInOrder) {
           // Ignore non-updated players
-          if (player.position === null || player.position === "BTN") continue;
+          if (player.position === null || player.position?.includes("BTN"))
+            continue;
           logMessage(
             `${player.logMessagePrefix}Position updated: ${player.position}`,
             {
@@ -909,7 +1091,7 @@ const formatCard = (unformattedCard) => {
 
   const suit = Math.floor(number / 13);
   return `${
-    ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"][
+    ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"][
       number % 13
     ]
   }${"cdhs"[suit]}`;
@@ -1019,9 +1201,16 @@ function clearAllIntervals() {
   }
 }
 
-function roundFloat(number, decimalPlaces = 2, forceDecimalPlaces = true) {
+function roundFloat(
+  number,
+  decimalPlaces = 2,
+  forceDecimalPlaces = true,
+  asCurrency = false
+) {
   return forceDecimalPlaces
     ? parseFloat(number.toFixed(decimalPlaces)).toLocaleString("en-US", {
+        style: asCurrency ? "currency" : undefined,
+        currency: asCurrency ? "USD" : undefined,
         minimumFractionDigits: decimalPlaces,
         maximumFractionDigits: decimalPlaces,
       })

@@ -1,0 +1,23 @@
+{
+  "translation": {
+    "menu": {
+      "home": "Home",
+      "training": "Training",
+      "solver": "Solver",
+      "ranges": "Ranges",
+      "ranges-editor": "Ranges editor"
+    },
+    "training": {
+      "setup": {
+        "title": "Setup",
+        "position": "Choose your position:",
+        "move": "Choose your move:"
+      },
+      "ask-move": "What's your move ?",
+      "score": "Score"
+    },
+    "solver": {
+      "moreThan20bb": "More than 20BB"
+    }
+  }
+}
