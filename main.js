@@ -708,7 +708,7 @@ class Player {
       return {
         balance: this.getBalance(),
         holeCards: this.getHoleCards(),
-        actionHistory: this.getCurrentAction(),
+        currentAction: this.getCurrentAction(),
       };
     } catch (error) {
       logMessage(
@@ -727,13 +727,19 @@ class Player {
     this.syncPlayerInfo(false);
   }
 
-  isSittingOut = () =>
+  isSittingOut = () => {
+    const currentAction = this.getCurrentAction();
+    console.log("currentAction", currentAction);
+
     this.actionHistory.length === 0
-      ? false
+      ? !currentAction
+        ? true
+        : currentAction?.action === "SITTING OUT"
       : this.actionHistory[this.actionHistory.length - 1].action ===
           "SITTING OUT" ||
         this.actionHistory[this.actionHistory.length - 1].action ===
           "NEW PLAYER";
+  };
 
   getNumBigBlinds = () =>
     this.pokerTable.blinds.big !== undefined
@@ -854,7 +860,7 @@ class Player {
           this.actionHistory[this.actionHistory.length - 1].action ===
             currentAction)
       )
-        return;
+        return this.actionHistory[this.actionHistory.length - 1] || null;
 
       // Create an action object
       const action = {
@@ -884,16 +890,20 @@ class Player {
           }
         );
       }
+
+      return action;
     }
 
-    return this.actionHistory;
+    return null;
   }
 
   formatAction(action) {
-    return (
+    const formattedAction =
       // Check if the action is just a number (e.g. "7" for "7 seconds left to make a move")
-      !isNaN(action) ? `${action} seconds left to make a move...` : action
-    );
+      !isNaN(action) ? `${action} seconds left to make a move...` : action;
+    return formattedAction === " seconds left to make a move..."
+      ? "SITTING OUT"
+      : formattedAction;
   }
 }
 
