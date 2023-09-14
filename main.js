@@ -142,6 +142,7 @@ class HUD {
   close() {
     this.stopSyncingDOM();
     this.removeHUD();
+    this.hidePlayerBBs();
   }
 
   syncDOM(runInstantly = true) {
@@ -202,6 +203,9 @@ class HUD {
         // Refresh the HUD menu data
         this.createPokerEyeMenu(true);
         if (this.isMenuOffScreen()) this.resetMenuPosition();
+
+        // Refresh the shown BB for each player (if this.showBB is true)
+        if (this.showBB) this.displayPlayerBBs();
       }
     } catch (error) {
       console.error(error);
@@ -240,6 +244,68 @@ class HUD {
       this.doc
         ?.querySelectorAll("#PokerEyePlus-menu")
         ?.forEach((node) => node.remove());
+  }
+
+  displayPlayerBBs() {
+    for (const player of this.pokerTable.players.values()) {
+      const balanceElement = player.dom.querySelector(".balanceLargeSize");
+      if (!balanceElement) continue;
+
+      // Adjust styling to fit the BB
+      balanceElement.style.overflow = "auto";
+      balanceElement.style.display = "flex";
+      balanceElement.style.alignItems = "center";
+      balanceElement.style.justifyContent = "center";
+
+      // Store the initial dimensions of the balance element
+      const initialWidth = balanceElement.offsetWidth;
+      const initialHeight = balanceElement.offsetHeight;
+
+      const balanceWithBB = `${this.pokerTable.currencySymbol}${roundFloat(
+        player.balance || 0
+      )} ${player.numBigBlinds ? `(${player.numBigBlinds} BB)` : ""}`;
+      if (balanceElement.innerText !== balanceWithBB)
+        balanceElement.innerText = balanceWithBB;
+
+      // Check if text is overflowing and adjust font size
+      const style = this.doc.defaultView
+        .getComputedStyle(balanceElement, null)
+        .getPropertyValue("font-size");
+      let fontSize = parseFloat(style);
+
+      // While the text is overflowing, reduce the font size
+      while (
+        balanceElement.scrollWidth > initialWidth ||
+        balanceElement.scrollHeight > initialHeight
+      ) {
+        fontSize--;
+        balanceElement.style.fontSize = fontSize + "px";
+      }
+
+      // Restore the original dimensions of the balance element
+      balanceElement.style.width = initialWidth + "px";
+      balanceElement.style.height = initialHeight + "px";
+    }
+  }
+
+  hidePlayerBBs() {
+    for (const player of this.pokerTable.players.values()) {
+      const balanceElement = player.dom.querySelector(".balanceLargeSize");
+      if (!balanceElement) continue;
+
+      // Remove custom styling
+      balanceElement.style.fontSize = "";
+      balanceElement.style.overflow = "";
+      balanceElement.style.display = "";
+      balanceElement.style.alignItems = "";
+      balanceElement.style.justifyContent = "";
+
+      const balanceWithoutBB = `${this.pokerTable.currencySymbol}${roundFloat(
+        player.balance || 0
+      )}`;
+      if (balanceElement.innerText !== balanceWithoutBB)
+        balanceElement.innerText = balanceWithoutBB;
+    }
   }
 
   toggleVisibility() {
@@ -292,6 +358,8 @@ class HUD {
   toggleShowBB() {
     this.showBB = !this.showBB;
     this.updateShowBBSwitchStyling();
+
+    if (!this.showBB) this.hidePlayerBBs();
 
     logMessage(
       `${this.pokerTable.logMessagePrefix}Show BB toggled ${
@@ -658,11 +726,12 @@ class Player {
   }
 
   isSittingOut = () =>
-    this.actionHistory.length > 0 &&
-    (this.actionHistory[this.actionHistory.length - 1].action ===
-      "SITTING OUT" ||
-      this.actionHistory[this.actionHistory.length - 1].action ===
-        "NEW PLAYER");
+    this.actionHistory.length === 0
+      ? false
+      : this.actionHistory[this.actionHistory.length - 1].action ===
+          "SITTING OUT" ||
+        this.actionHistory[this.actionHistory.length - 1].action ===
+          "NEW PLAYER";
 
   getNumBigBlinds = () =>
     this.pokerTable.blinds.big !== undefined
@@ -676,9 +745,10 @@ class Player {
     //  1. Get the innerText of the <span> tag with attribute "data-qa" with value "playerBalance"
     //  2. Parse the balance text to a number and store it in a new Player instance
     //   Note: These values are formatted in the "x,xxx.xx" format (e.g."2,224.37"), but whenever the value has no decimal places, the format is "x,xxx" (e.g. "1,963")
-    const balanceText = this.dom.querySelector(
-      'span[data-qa="playerBalance"]'
-    )?.innerText;
+    const balanceText = this.dom
+      .querySelector('span[data-qa="playerBalance"]')
+      ?.innerText?.replace(/\(.*\)/, "")
+      ?.trim();
     const balance = parseCurrency(balanceText);
     this.balance = balance;
     this.numBigBlinds = this.getNumBigBlinds();
@@ -937,6 +1007,8 @@ class PokerTable {
 
     // Parse the blinds text to two numbers separated by "/"
     //  1. Split the blinds text by "/", then make the small blind be the left side of the "/" and the big blind the right side of the "/" (but before the first " "), where after the first " " is the game type (e.g. "No Limit Hold'em")
+    if (!tableDescription?.split("/")[0] || !tableDescription?.split("/")[1])
+      return;
     const smallBlind = parseCurrency(tableDescription.split("/")[0]);
     const bigBlind = parseCurrency(
       tableDescription.split("/")[1].split(" ")[0]
@@ -1158,25 +1230,30 @@ class PokerTable {
 
     // Update the side pots if they have changed
     if (JSON.stringify(this.sidePots) !== JSON.stringify(sidePots)) {
-      logMessage(
-        `${this.logMessagePrefix}Side pots updated: ${sidePots
-          .map(
-            (pot, potIndex) =>
-              `(#${potIndex + 1}) ${this.currencySymbol}${roundFloat(
-                pot || 0
-              )}${
-                this.sidePots !== undefined
-                  ? ` (net: ${this.currencySymbol}${roundFloat(
-                      pot - (this.sidePots[potIndex] || 0)
-                    )}, previous: ${this.currencySymbol}${roundFloat(
-                      this.sidePots[potIndex] || 0
-                    )})`
-                  : ""
-              }`
-          )
-          .join(" | ")}`,
-        { color: "mediumseagreen" }
-      );
+      if (sidePots.length === 0)
+        logMessage(`${this.logMessagePrefix}Side pots have been cleared.`, {
+          color: "mediumseagreen",
+        });
+      else
+        logMessage(
+          `${this.logMessagePrefix}Side pots updated: ${sidePots
+            .map(
+              (pot, potIndex) =>
+                `(#${potIndex + 1}) ${this.currencySymbol}${roundFloat(
+                  pot || 0
+                )}${
+                  this.sidePots !== undefined
+                    ? ` (net: ${this.currencySymbol}${roundFloat(
+                        pot - (this.sidePots[potIndex] || 0)
+                      )}, previous: ${this.currencySymbol}${roundFloat(
+                        this.sidePots[potIndex] || 0
+                      )})`
+                    : ""
+                }`
+            )
+            .join(" | ")}`,
+          { color: "mediumseagreen" }
+        );
       this.sidePots = sidePots;
     }
 
@@ -1480,6 +1557,7 @@ function exit(silent = false) {
 
   // Close all poker tables and stop syncing player info
   for (const table of pokerTables.values()) {
+    table.hud.close();
     table.close();
     for (const player of table.players.values()) player.stopSyncingPlayerInfo();
   }
