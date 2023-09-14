@@ -89,10 +89,6 @@ const INITIAL_MENU_POSITION = {
 //   • The HUD should already be listening for these changes, so it should update automatically and display the best preflop move on the screen!
 // ----------------------------------------------------------------------------------------------------------------------------------------------
 
-// TODO: Add a switch to toggle balances as big blinds (BB) or actual currency ($)
-//  1. TODO: ...
-// ----------------------------------------------------------------------------------------------------------------------------------------------
-
 class HUD {
   constructor(pokerTable) {
     this.pokerTable = pokerTable;
@@ -141,8 +137,8 @@ class HUD {
 
   close() {
     this.stopSyncingDOM();
-    this.removeHUD();
     this.hidePlayerBBs();
+    this.removeHUD();
   }
 
   syncDOM(runInstantly = true) {
@@ -256,6 +252,7 @@ class HUD {
       balanceElement.style.display = "flex";
       balanceElement.style.alignItems = "center";
       balanceElement.style.justifyContent = "center";
+      balanceElement.style.padding = "0";
 
       // Store the initial dimensions of the balance element
       const initialWidth = balanceElement.offsetWidth;
@@ -263,9 +260,13 @@ class HUD {
 
       const balanceWithBB = `${this.pokerTable.currencySymbol}${roundFloat(
         player.balance || 0
-      )} ${player.numBigBlinds ? `(${player.numBigBlinds} BB)` : ""}`;
-      if (balanceElement.innerText !== balanceWithBB)
-        balanceElement.innerText = balanceWithBB;
+      )} ${
+        player.numBigBlinds
+          ? `<span class="ml-1 font-normal">(${player.numBigBlinds} BB)</span>`
+          : ""
+      }`;
+      if (balanceElement.innerHTML !== balanceWithBB)
+        balanceElement.innerHTML = balanceWithBB;
 
       // Check if text is overflowing and adjust font size
       const style = this.doc.defaultView
@@ -299,12 +300,13 @@ class HUD {
       balanceElement.style.display = "";
       balanceElement.style.alignItems = "";
       balanceElement.style.justifyContent = "";
+      balanceElement.style.padding = "";
 
       const balanceWithoutBB = `${this.pokerTable.currencySymbol}${roundFloat(
         player.balance || 0
       )}`;
-      if (balanceElement.innerText !== balanceWithoutBB)
-        balanceElement.innerText = balanceWithoutBB;
+      if (balanceElement.innerHTML !== balanceWithoutBB)
+        balanceElement.innerHTML = balanceWithoutBB;
     }
   }
 
