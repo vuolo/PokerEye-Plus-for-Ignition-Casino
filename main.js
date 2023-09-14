@@ -275,15 +275,29 @@ class HUD {
     );
 
     const detailsPanel = `
+      <!-- Last Action #da70d6 -->
+      <div class="flex justify-center items-center px-1 rounded-sm">
+        <span class="text-xs font-bold">${
+          player.actionHistory.length > 0
+            ? player.actionHistory[
+                player.actionHistory.length - 1
+              ].action.replace(
+                " seconds left to make a move...",
+                " seconds left..."
+              )
+            : `<span class="opacity-[75%]">...</span>`
+        }</span>
+      </div>
+
       <!-- Hands Dealt -->
-      <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
-        <span>Hands Dealt</span>
+      <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
+        <span class="text-xs opacity-[75%]">Hands Dealt</span>
         <span class="font-bold">${this.pokerTable.numHandsDealt}</span>
       </div>
 
       <!-- Balance -->
-      <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
-        <span>Balance</span>
+      <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
+        <span class="text-xs opacity-[75%]">Balance</span>
         <span class="font-bold">$${roundFloat(
           player.balance || 0,
           2,
@@ -293,41 +307,28 @@ class HUD {
       </div>
 
       <!-- Position -->
-      <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
-        <span>Position</span>
+      <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
+        <span class="text-xs opacity-[75%]">Position</span>
         <span class="font-bold">${player.position || "SITTING OUT"}</span>
       </div>
 
       <!-- Hand -->
-      <div class="flex justify-between items-center bg-[#F2F2F2] p-1 rounded-sm shadow-sm">
-        <span>Hand</span>
+      <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
+        <span class="text-xs opacity-[75%]">Hand</span>
         <span class="font-bold">${
           player.holeCards.length > 0
-            ? player.holeCards
-                .map((card) => {
-                  let suitIcon;
-                  let color = "black";
-                  switch (card.slice(-1)) {
-                    case "c":
-                      suitIcon = "♣";
-                      break;
-                    case "d":
-                      suitIcon = "♦";
-                      color = "red";
-                      break;
-                    case "h":
-                      suitIcon = "♥";
-                      color = "red";
-                      break;
-                    case "s":
-                      suitIcon = "♠";
-                      break;
-                  }
-                  return `<span style="color: ${color};">${card.slice(
-                    0,
-                    -1
-                  )}${suitIcon}</span>`;
-                })
+            ? player.holeCards.map((card) => this.renderCard(card)).join(" ")
+            : `<span class="opacity-[75%]">...</span>`
+        }</span>
+      </div>
+
+      <!-- Board -->
+      <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
+        <span class="text-xs opacity-[75%]">Board</span>
+        <span class="font-bold">${
+          this.pokerTable.board.length > 0
+            ? this.pokerTable.board
+                .map((card) => this.renderCard(card))
                 .join(" ")
             : `<span class="opacity-[75%]">...</span>`
         }</span>
@@ -377,6 +378,31 @@ class HUD {
     this.pokerEyeMenu = menu;
 
     this.footerContainer.appendChild(menu);
+  }
+
+  renderCard(card) {
+    let suitIcon;
+    let color = "#333";
+    switch (card.slice(-1)) {
+      case "c":
+        suitIcon = "♣";
+        break;
+      case "d":
+        suitIcon = "♦";
+        color = "#c3161c";
+        break;
+      case "h":
+        suitIcon = "♥";
+        color = "#c3161c";
+        break;
+      case "s":
+        suitIcon = "♠";
+        break;
+    }
+    return `<span style="color: ${color};">${card.slice(
+      0,
+      -1
+    )}${suitIcon}</span>`;
   }
 }
 
