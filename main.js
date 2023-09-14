@@ -137,7 +137,7 @@ class HUD {
 
   close() {
     this.stopSyncingDOM();
-    this.hidePlayerBBs();
+    this.hideBBs();
     this.removeHUD();
   }
 
@@ -201,7 +201,7 @@ class HUD {
         if (this.isMenuOffScreen()) this.resetMenuPosition();
 
         // Refresh the shown BB for each player (if this.showBB is true)
-        if (this.showBB) this.displayPlayerBBs();
+        if (this.showBB) this.displayBBs();
       }
     } catch (error) {
       console.error(error);
@@ -242,7 +242,8 @@ class HUD {
         ?.forEach((node) => node.remove());
   }
 
-  displayPlayerBBs() {
+  displayBBs() {
+    // Convert all player balances to BBs
     for (const player of this.pokerTable.players.values()) {
       const balanceElement = player.dom.querySelector(".balanceLargeSize");
       if (!balanceElement) continue;
@@ -253,6 +254,8 @@ class HUD {
       balanceElement.style.alignItems = "center";
       balanceElement.style.justifyContent = "center";
       balanceElement.style.padding = "0";
+      balanceElement.style.width = "auto";
+      balanceElement.style.margin = "0 0.25rem";
 
       // Store the initial dimensions of the balance element
       const initialWidth = balanceElement.offsetWidth;
@@ -287,9 +290,14 @@ class HUD {
       balanceElement.style.width = initialWidth + "px";
       balanceElement.style.height = initialHeight + "px";
     }
+
+    // TODO: Convert all pots (total, main, all side pots) to BBs
+
+    // TODO: Convert all current bets to BBs
   }
 
-  hidePlayerBBs() {
+  hideBBs() {
+    // Revert all player balances to their original state
     for (const player of this.pokerTable.players.values()) {
       const balanceElement = player.dom.querySelector(".balanceLargeSize");
       if (!balanceElement) continue;
@@ -301,6 +309,8 @@ class HUD {
       balanceElement.style.alignItems = "";
       balanceElement.style.justifyContent = "";
       balanceElement.style.padding = "";
+      balanceElement.style.width = "";
+      balanceElement.style.margin = "";
 
       const balanceWithoutBB = `${this.pokerTable.currencySymbol}${roundFloat(
         player.balance || 0
@@ -308,6 +318,10 @@ class HUD {
       if (balanceElement.innerHTML !== balanceWithoutBB)
         balanceElement.innerHTML = balanceWithoutBB;
     }
+
+    // TODO: Revert all pots (total, main, all side pots) to their original state
+
+    // TODO: Revert all current bets to their original state
   }
 
   toggleVisibility() {
@@ -361,7 +375,7 @@ class HUD {
     this.showBB = !this.showBB;
     this.updateShowBBSwitchStyling();
 
-    if (!this.showBB) this.hidePlayerBBs();
+    if (!this.showBB) this.hideBBs();
 
     logMessage(
       `${this.pokerTable.logMessagePrefix}Show BB toggled ${
