@@ -180,16 +180,17 @@ class HUD {
         }
 
         // Refresh the pokerEyeMenu if it disappeared
-        if (!this.footerContainer.querySelector("#PokerEyePlus-menu")) {
+        if (!this.doc.body.querySelector("#PokerEyePlus-menu")) {
           removeHUD({ pokerEyeMenu: true });
           this.createPokerEyeMenu();
         }
 
-        // Refresh the HUD data
+        // Refresh the HUD menu data
         this.createPokerEyeMenu(true);
+        if (this.isMenuOffScreen()) this.resetMenuPosition();
       }
     } catch (error) {
-      // console.error(error);
+      console.error(error);
       this.removeHUD();
 
       // Waiting for the table DOM to be ready...
@@ -230,6 +231,13 @@ class HUD {
   toggleVisibility() {
     this.isVisible = !this.isVisible;
     this.updateVisibilitySwitchStyling();
+
+    logMessage(
+      `${this.pokerTable.logMessagePrefix}HUD visibility toggled ${
+        this.isVisible ? "on" : "off"
+      }`,
+      { color: "cyan" }
+    );
   }
 
   // Place the switch in the bottom right corner of the screen
@@ -273,18 +281,31 @@ class HUD {
     const player = this.pokerTable.players.get(
       this.pokerTable.myPlayerSeatNumber
     );
+    this.player = player;
 
     const detailsPanel = `
-      <!-- Last Action #da70d6 -->
-      <div class="flex justify-center items-center px-1 rounded-sm">
-        <span class="text-xs font-bold">${
+      <!-- Most Recent Action -->
+      <div class="flex justify-between items-center px-1 rounded-sm">
+        <div class="flex flex-1 justify-start items-center">
+          <span class="iconItem">
+            <i class="icon-component icon-hand-history opacity-[75%]"></i>
+          </span>
+          <span class="ml-1.5 text-xs font-bold">${
+            player.actionHistory.length > 0
+              ? `${player.actionHistory[
+                  player.actionHistory.length - 1
+                ].action.replace(
+                  " seconds left to make a move...",
+                  " second(s) left..."
+                )}`
+              : `<span class="opacity-[75%]">...</span>`
+          }</span>
+        </div>
+        <span class="text-[0.6rem]">${
           player.actionHistory.length > 0
-            ? player.actionHistory[
-                player.actionHistory.length - 1
-              ].action.replace(
-                " seconds left to make a move...",
-                " seconds left..."
-              )
+            ? `${convertFormattedTimestampToAgo(
+                player.actionHistory[player.actionHistory.length - 1].timestamp
+              )}`
             : `<span class="opacity-[75%]">...</span>`
         }</span>
       </div>
@@ -336,23 +357,36 @@ class HUD {
     `;
 
     if (refreshOnly) {
-      this.pokerEyeMenu.querySelector("#PokerEyePlus-detailsPanel").innerHTML =
-        detailsPanel;
-      if (this.isVisible) this.pokerEyeMenu.classList.remove("hidden");
-      else this.pokerEyeMenu.classList.add("hidden");
+      // Refresh only if the detailsPanel has changed
+      if (
+        this.pokerEyeMenu.querySelector("#PokerEyePlus-detailsPanel")
+          .innerHTML != detailsPanel
+      )
+        this.pokerEyeMenu.querySelector(
+          "#PokerEyePlus-detailsPanel"
+        ).innerHTML = detailsPanel;
+
+      // Refresh only if the visibility has changed
+      if (this.isVisible && this.pokerEyeMenu.classList.contains("hidden"))
+        this.pokerEyeMenu.classList.remove("hidden");
+      else if (
+        !this.isVisible &&
+        !this.pokerEyeMenu.classList.contains("hidden")
+      )
+        this.pokerEyeMenu.classList.add("hidden");
       return;
     }
 
     const menu = this.doc.createElement("div");
     menu.id = "PokerEyePlus-menu";
-    menu.className = `absolute right-[1rem] top-[10%] min-w-[15rem] bg-white rounded-md overflow-hidden text-[#1F2E35]`;
+    menu.className = `absolute left-[1rem] top-[10%] min-w-[15rem] bg-white rounded-md overflow-hidden text-[#1F2E35]`;
 
     const container = this.doc.createElement("div");
     container.className = `flex flex-col w-full`;
 
     const header = `
       <div class="flex justify-between items-center shadow-2xl border-[4rem] border-b-red-300">
-        <div class="flex items-center space-x-1 pl-1">
+        <div id="PokerEyePlus-menu-dragZone" class="flex items-center space-x-1 pl-1 w-full h-full cursor-move">
           <img src="https://i.imgur.com/ETaXEfg.png" alt="PokerEye+ Logo" class="h-8 w-8">
           <h1 class="text-lg leading-[0]">PokerEye+</h1>
         </div>
@@ -376,8 +410,83 @@ class HUD {
     container.appendChild(detailsPanelContainer);
     menu.appendChild(container);
     this.pokerEyeMenu = menu;
+    this.makeMenuDraggable();
 
-    this.footerContainer.appendChild(menu);
+    this.doc.body.appendChild(menu);
+  }
+
+  makeMenuDraggable() {
+    try {
+      const dragZone = this.pokerEyeMenu.querySelector(
+        "#PokerEyePlus-menu-dragZone"
+      );
+
+      let x1 = 0;
+      let y1 = 0;
+      let x2 = 0;
+      let y2 = 0;
+
+      function dragMouseDown(e) {
+        e = e || this.doc.defaultView.event;
+        e.preventDefault();
+
+        x2 = e.clientX;
+        y2 = e.clientY;
+        this.doc.onmouseup = closeDrag.bind(this);
+        this.doc.onmousemove = mouseDrag.bind(this);
+      }
+
+      function mouseDrag(e) {
+        e = e || this.game.doc.defaultView.event;
+        e.preventDefault();
+
+        x1 = x2 - e.clientX;
+        y1 = y2 - e.clientY;
+        x2 = e.clientX;
+        y2 = e.clientY;
+
+        this.pokerEyeMenu.style.left = this.pokerEyeMenu.offsetLeft - x1 + "px";
+        this.pokerEyeMenu.style.top = this.pokerEyeMenu.offsetTop - y1 + "px";
+      }
+
+      function closeDrag() {
+        this.doc.onmouseup = null;
+        this.doc.onmousemove = null;
+      }
+
+      dragZone.onmousedown = dragMouseDown.bind(this);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  isMenuOffScreen() {
+    let winX = this.root.offsetWidth;
+    let winY = this.root.offsetHeight;
+    let displayX = parseInt(this.pokerEyeMenu.style.left, 10);
+    let displayY = parseInt(this.pokerEyeMenu.style.top, 10);
+
+    return displayX > winX || displayY > winY;
+  }
+
+  resetMenuPosition() {
+    let winY = this.root.offsetHeight;
+    let seatRect = this.player.dom.getBoundingClientRect();
+
+    let horizontalPosition =
+      (seatRect.left * this.getTableZoom()).toString() + "px";
+    this.pokerEyeMenu.style.left = horizontalPosition;
+
+    this.pokerEyeMenu.style.top =
+      seatRect.bottom * this.getTableZoom() > winY / 2
+        ? (seatRect.bottom * this.getTableZoom()).toString() + "px"
+        : (seatRect.top * this.getTableZoom()).toString() + "px";
+  }
+
+  getTableZoom() {
+    return Number(
+      this.doc.querySelector('div[data-qa="table"]')?.style?.zoom || 1
+    );
   }
 
   renderCard(card) {
@@ -429,6 +538,7 @@ class Player {
     }${this.isMyPlayer ? " - you" : ""}): `;
 
     this.syncPlayerInfo();
+    displayAttribution();
   }
 
   syncPlayerInfo(runInstantly = true) {
@@ -1286,4 +1396,54 @@ function formatTimestamp(date) {
   const mmm = String(date.getMilliseconds()).padStart(3, "0");
 
   return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}.${mmm}`;
+}
+
+// Converts a formatted timestamp (e.g. "2021-01-01 00:00:00.000") to a relative timestamp (e.g. "1 second ago", "2 minutes ago", "3 hours ago")
+function convertFormattedTimestampToAgo(formattedTimestamp) {
+  const timestamp = new Date(formattedTimestamp).getTime();
+  const now = new Date().getTime();
+  const difference = now - timestamp;
+
+  const seconds = Math.floor(difference / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+
+  if (seconds <= 0) return "just now";
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? "" : "s"} ago`;
+  else if (minutes < 60)
+    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  else if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  else return `${Math.floor(hours / 24)} days ago`;
+}
+
+// attribution.js
+const SOFTWARE_NAME = "PokerEye+ (Plus) for Ignition Casino";
+const SOFTWARE_VERSION = "1.0.0";
+const ASCII_LOGO = `
+                    @                   
+                    @                   
+      @@            @            @@     
+       @@                       @@      
+              @@@@@@@@@@@@@             
+        @@@@ @@,,,,,/@@@,,@@ @@@@       
+     @@@   @@,,,*,@@@@@,,@@,@@   @@@    
+  @@@     @@,@@,@@@,,,@@@,,,,@@     @@@ 
+@@@       @,,,,@@,,,,,,,@@,@@,@       @@
+  @@@     @@,,@,@@@@,@@@@,*@,@@     @@@ 
+     @@@   @@,@(,,*@@@*,@/,,@@   @@@    
+        #@@@ @@,,@@@/,,,,,@@ @@@.       
+              @@@@@@@@@@@@@             
+       @@                       @@      
+      @@            @            @@     
+                    @                   `;
+const ASCII_LOGO_BORDER_Y = new Array(40).fill("=").join("");
+
+function displayAttribution() {
+  console.log(
+    "%c%s%c%s",
+    "color: magenta; background: black;",
+    `${ASCII_LOGO_BORDER_Y}${ASCII_LOGO}\n${ASCII_LOGO_BORDER_Y}\n\n`,
+    "color: magenta; font-size: 1.5em; background: black; font-weight: bold;",
+    `${SOFTWARE_NAME} v${SOFTWARE_VERSION}\n`
+  );
 }
