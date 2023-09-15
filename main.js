@@ -1,7 +1,7 @@
 const TICK_RATE = 100; // ms
 const LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE = false;
 const ENABLE_HUD_VISIBILITY_BY_DEFAULT = true;
-const SHOW_BB_BY_DEFAULT = true;
+const SHOW_BB_BY_DEFAULT = false;
 const TAILWIND_CSS_CDN_URL = "https://cdn.tailwindcss.com";
 const TAILWIND_CSS_CUSTOM_CONFIG = {
   corePlugins: {
@@ -245,50 +245,27 @@ class HUD {
   displayBBs() {
     // Convert all player balances to BBs
     for (const player of this.pokerTable.players.values()) {
-      const balanceElement = player.dom.querySelector(".balanceLargeSize");
+      const balanceElement = player.dom.querySelector(
+        'span[data-qa="playerBalance"]'
+      );
       if (!balanceElement) continue;
-
-      // Adjust styling to fit the BB
-      balanceElement.style.overflow = "auto";
-      balanceElement.style.display = "flex";
-      balanceElement.style.alignItems = "center";
-      balanceElement.style.justifyContent = "center";
-      balanceElement.style.padding = "0";
-      balanceElement.style.width = "auto";
-      balanceElement.style.margin = "0 0.25rem";
 
       // Store the initial dimensions of the balance element
       const initialWidth = balanceElement.offsetWidth;
       const initialHeight = balanceElement.offsetHeight;
 
-      const balanceWithBB = `${this.pokerTable.currencySymbol}${roundFloat(
-        player.balance || 0
-      )} ${
+      const balanceWithBB = `<span id="PokerEyePlus-originalBalance" class="max-w-[0px] overflow-hidden max-h-[0px] text-white text-[0rem]">${
+        this.pokerTable.currencySymbol
+      }${formatCurrencyLikeIgnition(roundFloat(player.balance || 0))}</span>${
         player.numBigBlinds
-          ? `<span class="ml-1 font-normal">(${player.numBigBlinds} BB)</span>`
-          : ""
+          ? `<span id="PokerEyePlus-numBigBlinds" class="min-w-[inherit]">${formatCurrencyLikeIgnition(
+              roundFloat(player.numBigBlinds, 1, false),
+              false
+            )} BB</span>`
+          : "0 BB"
       }`;
       if (balanceElement.innerHTML !== balanceWithBB)
         balanceElement.innerHTML = balanceWithBB;
-
-      // Check if text is overflowing and adjust font size
-      const style = this.doc.defaultView
-        .getComputedStyle(balanceElement, null)
-        .getPropertyValue("font-size");
-      let fontSize = parseFloat(style);
-
-      // While the text is overflowing, reduce the font size
-      while (
-        balanceElement.scrollWidth > initialWidth ||
-        balanceElement.scrollHeight > initialHeight
-      ) {
-        fontSize--;
-        balanceElement.style.fontSize = fontSize + "px";
-      }
-
-      // Restore the original dimensions of the balance element
-      balanceElement.style.width = initialWidth + "px";
-      balanceElement.style.height = initialHeight + "px";
     }
 
     // TODO: Convert all pots (total, main, all side pots) to BBs
@@ -299,22 +276,14 @@ class HUD {
   hideBBs() {
     // Revert all player balances to their original state
     for (const player of this.pokerTable.players.values()) {
-      const balanceElement = player.dom.querySelector(".balanceLargeSize");
+      const balanceElement = player.dom.querySelector(
+        'span[data-qa="playerBalance"]'
+      );
       if (!balanceElement) continue;
 
-      // Remove custom styling
-      balanceElement.style.fontSize = "";
-      balanceElement.style.overflow = "";
-      balanceElement.style.display = "";
-      balanceElement.style.alignItems = "";
-      balanceElement.style.justifyContent = "";
-      balanceElement.style.padding = "";
-      balanceElement.style.width = "";
-      balanceElement.style.margin = "";
-
-      const balanceWithoutBB = `${this.pokerTable.currencySymbol}${roundFloat(
-        player.balance || 0
-      )}`;
+      const balanceWithoutBB = `${
+        this.pokerTable.currencySymbol
+      }${formatCurrencyLikeIgnition(roundFloat(player.balance || 0))}`;
       if (balanceElement.innerHTML !== balanceWithoutBB)
         balanceElement.innerHTML = balanceWithoutBB;
     }
@@ -468,7 +437,13 @@ class HUD {
         <span class="text-xs opacity-[75%]">Balance</span>
         <span class="font-bold">${this.pokerTable.currencySymbol}${roundFloat(
       myPlayer.balance || 0
-    )} ${myPlayer.numBigBlinds ? `(${myPlayer.numBigBlinds} BB)` : ""}</span>
+    )
+      .toString()
+      .replace(".00", "")} ${
+      myPlayer.numBigBlinds
+        ? `(${roundFloat(myPlayer.numBigBlinds, 1, false)} BB)`
+        : ""
+    }</span>
       </div>
 
       <!-- Position -->
@@ -693,9 +668,11 @@ class Player {
     this.isMyPlayer = this.dom.classList.contains("myPlayer");
 
     this.balance = undefined;
+    this.balanceHistory = [];
     this.numBigBlinds = undefined;
     this.holeCards = [];
     this.actionHistory = [];
+    this.actionHistoryPerHand = new Map();
     this.isTurnToAct = false;
     this.position = null;
 
@@ -737,6 +714,7 @@ class Player {
 
   resetActionHistory() {
     this.actionHistory = [];
+    this.actionHistoryPerHand = new Map();
     this.isTurnToAct = false;
 
     this.stopSyncingPlayerInfo();
@@ -768,13 +746,18 @@ class Player {
     //  1. Get the innerText of the <span> tag with attribute "data-qa" with value "playerBalance"
     //  2. Parse the balance text to a number and store it in a new Player instance
     //   Note: These values are formatted in the "x,xxx.xx" format (e.g."2,224.37"), but whenever the value has no decimal places, the format is "x,xxx" (e.g. "1,963")
-    const balanceText = this.dom
-      .querySelector('span[data-qa="playerBalance"]')
-      ?.innerText?.replace(/\(.*\)/, "")
-      ?.trim();
+    const balanceDOM = this.dom.querySelector('span[data-qa="playerBalance"]');
+    const showBBOriginalBalance = this.dom.querySelector(
+      "#PokerEyePlus-originalBalance"
+    )?.innerText;
+    const balanceText = showBBOriginalBalance
+      ? showBBOriginalBalance
+      : balanceDOM?.innerHTML;
+
+    if (balanceText?.includes("PokerEyePlus-originalBalance"))
+      return this.balance;
     const balance = parseCurrency(balanceText);
     this.balance = balance;
-    this.numBigBlinds = this.getNumBigBlinds();
 
     // Check for the currency symbol
     if (isNaN(balanceText?.charAt(0))) {
@@ -782,7 +765,12 @@ class Player {
     } else this.pokerTable.currencySymbol = "";
 
     // Log the balance if it has changed
-    if (this.balance !== undefined && previousBalance !== this.balance)
+    if (this.balance !== undefined && previousBalance !== this.balance) {
+      this.balanceHistory.push({
+        balance,
+        timestamp: formatTimestamp(new Date()),
+      });
+      this.numBigBlinds = this.getNumBigBlinds();
       logMessage(
         `${this.logMessagePrefix}Balance updated: ${
           this.pokerTable.currencySymbol
@@ -797,6 +785,7 @@ class Player {
         }`,
         { color: this.isMyPlayer ? "goldenrod" : "lightgray" }
       );
+    }
 
     return this.balance;
   }
@@ -844,6 +833,27 @@ class Player {
     return this.holeCards;
   }
 
+  isPutInMoneyAction(action) {
+    return [
+      "CALL",
+      "BET",
+      "RAISE",
+      "POST SB",
+      "POST BB",
+      "ALL-IN",
+      "ALL-IN · x%",
+    ].includes(action);
+  }
+
+  didUserPutInMoney = (action = undefined) =>
+    action
+      ? this.isPutInMoneyAction(action)
+      : this.actionHistory[this.actionHistory.length - 1]
+      ? this.isPutInMoneyAction(
+          this.actionHistory[this.actionHistory.length - 1].action
+        )
+      : false;
+
   // Get a list of all player actions (e.g. "FOLD", "CHECK", "CALL", "BET", "RAISE", "ALL-IN", "ALL-IN · x%", "SITTING OUT...", "POST SB", "POST BB", "x seconds left to make a move...", "NEW PLAYER", "DONT SHOW") along with the action's timestamp (e.g. "2021-01-01 00:00:00.000")
   getCurrentAction() {
     // To get the player's current action DOM:
@@ -880,11 +890,28 @@ class Player {
       // Create an action object
       const action = {
         action: currentAction,
+        amountBet: this.isPutInMoneyAction(currentAction)
+          ? this.balanceHistory.length >= 2
+            ? this.balance -
+              this.balanceHistory[this.balanceHistory.length - 2].balance
+            : this.balanceHistory.length === 1
+            ? this.balance - this.balanceHistory[0].balance
+            : 0
+          : null,
         timestamp: formatTimestamp(new Date()),
       };
 
       // Add the action object to the actionHistory array
       this.actionHistory.push(action);
+      this.actionHistoryPerHand.set(
+        this.pokerTable.numHandsDealt,
+        this.actionHistoryPerHand.get(this.pokerTable.numHandsDealt)
+          ? [
+              ...this.actionHistoryPerHand.get(this.pokerTable.numHandsDealt),
+              action,
+            ]
+          : [action]
+      );
       this.isTurnToAct = action.action.includes(
         "seconds left to make a move..."
       )
@@ -1676,7 +1703,26 @@ function roundFloat(
 
 function parseCurrency(currency) {
   if (currency === undefined || currency === null) return null;
-  return parseFloat(currency.replace(/[$,]/g, ""));
+  return parseFloat(currency.toString().replace(/[$,]/g, ""));
+}
+
+function formatCurrencyLikeIgnition(
+  number,
+  allowAdditionalZeroPastDecimal = true
+) {
+  const formattedNumber = parseCurrency(number)
+    .toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+    .replace(/\$/g, "")
+    .replace(".00", "");
+
+  return allowAdditionalZeroPastDecimal
+    ? formattedNumber
+    : formattedNumber.replace(/\.0+$/, "").replace(/(\.\d+?)0+$/, "$1");
 }
 
 function formatTimestamp(date) {
