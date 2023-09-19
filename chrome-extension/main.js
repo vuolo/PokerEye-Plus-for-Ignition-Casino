@@ -20,11 +20,11 @@ const INITIAL_MENU_POSITION = {
 //   1.1 Once loaded, sync (setInterval search for) the <iframe> tag with id="oddsCalculatorIframe" and store it's "src" attribute in a variable.
 //  2. Open a new headless iframe of the src from step 1.1
 //   2.1 Once loaded, create a new instance of a class "postflopOddsCalc" and pass this.document as the argument (must be already loaded and ready to be passed in) and store it as this.doc within the class.
-//  3. Create a function in the PokerTable class (in this script, not the Node.js script) that parses the board, number of other active players, and the user's hole cards to the format that the calculator expects as input
-//   • Example calculator input: "8h|9c|3|5d|7c|5h|Tc||1|1", where the first elements (separated by "|") are the user's hole cards, the next element is the number of other active players, then the 5 cards on the board, the last two elements are usually "1" and "1" (not sure what they are for, so ignore them)
+//  3. Create a function in the PokerTable class (in this script, not the Node.js script) that parses the board, number of other active players, and the user's hand to the format that the calculator expects as input
+//   • Example calculator input: "8h|9c|3|5d|7c|5h|Tc||1|1", where the first elements (separated by "|") are the user's hand, the next element is the number of other active players, then the 5 cards on the board, the last two elements are usually "1" and "1" (not sure what they are for, so ignore them)
 //  4. Send the parsed input from step 3 to the calculator (communicating by localhost API hosted by the Node.js script) and wait for the calculator to finish calculating the percentages
 //   4.1 (for the Node.js script) The API URL to fetch data from is `https://th.odds.pokernews.com/game-probs?input=${parsedInput}`,
-//       where input is the translated hole cards and board from step 4 in the form of "8h|9c|3|5d|7c|5h|Tc||1|1",
+//       where input is the translated hand and board from step 4 in the form of "8h|9c|3|5d|7c|5h|Tc||1|1",
 //       then url-encoded to be "8h%7C9c%7C3%7C5d%7C7c%7C5h%7CTc%7C%7C1%7C1"
 //         • Example fetch script:
 //         ```javascript
@@ -82,9 +82,9 @@ const INITIAL_MENU_POSITION = {
 // TODO: To get the best preflop move on a given hand, in any situation (up to 4-bets):
 //  1. Add another API endpoint to the Node.js script we wrote for postflop odds (see above) but for preflop odds (/calculate-preflop-odds)
 //   1.1 The logic for this is very difficult to explain shortly... but use the /data folder and the logic from /preflop-academy to figure out how to calculate the best preflp move
-//  2. Translate the hole cards and board to the format that the calculator expects as input (see above)
+//  2. Translate the hand and board to the format that the calculator expects as input (see above)
 //    2.1 Format the hand to show "o" for offsuit and "s" for suited (e.g. "AKo" or "AKs")
-//    2.2 Then, pass the formmatted translated hole cards and the player's position and circumstance (whoever raised last, and whether it was a normal raise, 3-bet, or 4-bet (e.g. { position: "BTN", action: "RAISE" }, or { position: "CO", action: "3-BET" }, or { position: "SB", action: "4-BET" })) to the API endpoint we created in step 1
+//    2.2 Then, pass the formmatted translated hand and the player's position and circumstance (whoever raised last, and whether it was a normal raise, 3-bet, or 4-bet (e.g. { position: "BTN", action: "RAISE" }, or { position: "CO", action: "3-BET" }, or { position: "SB", action: "4-BET" })) to the API endpoint we created in step 1
 //  3. Parse the response, store it in the pokerTable instance accordingly
 //   • The HUD should already be listening for these changes, so it should update automatically and display the best preflop move on the screen!
 // ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -458,8 +458,8 @@ class HUD {
       <div class="flex justify-between items-center bg-[#F2F2F2] py-1 px-2 rounded-sm shadow-sm">
         <span class="text-xs opacity-[75%]">Hand</span>
         <span class="font-bold">${
-          myPlayer.holeCards.length > 0
-            ? myPlayer.holeCards.map((card) => this.renderCard(card)).join(" ")
+          myPlayer.hand.length > 0
+            ? myPlayer.hand.map((card) => this.renderCard(card)).join(" ")
             : `<span class="opacity-[75%]">...</span>`
         }</span>
       </div>
@@ -670,7 +670,7 @@ class Player {
     this.balance = undefined;
     this.balanceHistory = [];
     this.numBigBlinds = undefined;
-    this.holeCards = [];
+    this.hand = [];
     this.actionHistory = [];
     this.actionHistoryPerHand = new Map();
     this.isTurnToAct = false;
@@ -700,7 +700,7 @@ class Player {
     try {
       return {
         balance: this.getBalance(),
-        holeCards: this.getHoleCards(),
+        hand: this.getHand(),
         currentAction: this.getCurrentAction(),
       };
     } catch (error) {
@@ -790,7 +790,7 @@ class Player {
     return this.balance;
   }
 
-  getHoleCards() {
+  getHand() {
     // To get hole cards DOM:
     //  1. Get all <div> tags with attribute "data-qa" with value of "holeCards"
     //  2. Now, for each of the <div> tags we got in step 1, get all <svg> tags that has an attribute of "data-qa" with a value that starts with "card"
@@ -803,34 +803,34 @@ class Player {
       .flat();
     this.holeCardsDOM = holeCardsDOM;
 
-    // To get hole cards:
+    // To get hand:
     //  1. Get the "data-qa" attribute value of each <svg> tag
     //  2. Filter out all empty/placeholder cards (this is when the <svg> tag's "data-qa" attribute value equals "card-1")
     //  3. Remove all duplicate cards (by removing all duplicate "data-qa" attribute values from the <svg> tags)
-    const newHoleCards = holeCardsDOM
+    const newHand = holeCardsDOM
       .map((svg) => svg.getAttribute("data-qa"))
       .filter((card) => card !== "card-1")
       .filter((card, index, cards) => cards.indexOf(card) === index)
       .map((card) => formatCard(card))
       .filter((card) => card !== null);
 
-    // Update the hole cards if they have changed
-    if (JSON.stringify(newHoleCards) !== JSON.stringify(this.holeCards)) {
-      this.holeCards = newHoleCards;
-      if (this.holeCards.length === 0)
-        logMessage(`${this.logMessagePrefix}Hole cards have been cleared.`, {
+    // Update the hand if they have changed
+    if (JSON.stringify(newHand) !== JSON.stringify(this.holeCards)) {
+      this.hand = newHand;
+      if (this.hand.length === 0)
+        logMessage(`${this.logMessagePrefix}Hand have been cleared.`, {
           color: this.isMyPlayer ? "goldenrod" : "lightblue",
         });
       else
         logMessage(
-          `${this.logMessagePrefix}Hole cards updated: ${this.holeCards
+          `${this.logMessagePrefix}Hand updated: ${this.hand
             .map((card) => `[${card}]`)
             .join(" ")}`,
           { color: this.isMyPlayer ? "goldenrod" : "lightblue" }
         );
     }
 
-    return this.holeCards;
+    return this.hand;
   }
 
   isPutInMoneyAction(action) {
@@ -1450,6 +1450,8 @@ class PokerTable {
             .filter((player) => player.seatNumber < buttonPlayer.seatNumber)
             .sort((a, b) => a.seatNumber - b.seatNumber),
         ];
+
+        // TODO: assign CO, HJ, LJ BEFORE SB, BB, UTG... (this is how the positions are formatted on Jonathan Little's Poker GTO charts)
 
         // Assign the positions.
         // First, assign SB, BB, UTG

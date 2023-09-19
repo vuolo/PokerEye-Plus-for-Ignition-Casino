@@ -1,6 +1,17 @@
 import Head from "next/head";
 
+import { api } from "~/utils/api";
+
 export default function Home() {
+  const { data: bestPreflopActions } =
+    api.pokerCalculations.getBestPreflopActions.useQuery({
+      maxPlayers: "6",
+      numBigBlinds: 100,
+      hand: ["AKo", "T9o"],
+      position: "CO",
+      rfiPosition: undefined,
+    });
+
   return (
     <>
       <Head>
@@ -19,6 +30,15 @@ export default function Home() {
           <span className="italic opacity-75">
             The API is currently running...
           </span>
+
+          <h1>Sample (Live) Preflop Calculation</h1>
+          <pre className="text-left">
+            <code>
+              {bestPreflopActions
+                ? JSON.stringify(bestPreflopActions, null, 2)
+                : "Calculating..."}
+            </code>
+          </pre>
         </div>
       </main>
     </>
