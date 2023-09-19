@@ -1,7 +1,0 @@
-.idea/
-*.iml
-node_modules/
-coverage/
-test-report.xml
-/build/
-/dist/
