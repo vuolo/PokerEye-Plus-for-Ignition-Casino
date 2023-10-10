@@ -7,7 +7,7 @@ export default function Home() {
     api.pokerCalculations.getBestPreflopActions.useQuery({
       maxPlayers: "6",
       numBigBlinds: 100,
-      hand: "T4s",
+      hand: "T3s",
       position: "SB",
       rfiPosition: undefined,
     });

@@ -1,6 +1,6 @@
 export type Position = "LJ" | "HJ" | "CO" | "BTN" | "SB" | "BB";
 export type RfiPosition = Exclude<Position, "BB">;
-export type Action = "Limp" | "Raise" | "Fold";
+export type Action = "Limp" | "Call" | "Raise" | "3Bet" | "Fold";
 
 export type BestAction = {
   action: Action;
@@ -11,12 +11,16 @@ export type BestAction = {
 export interface Chart {
   name: string;
   position: Position;
+  rfiPosition?: RfiPosition;
   handMap: Partial<HandMap>;
 }
 
 export type Charts = {
-  [K in `${Chart["name"]}-${Chart["position"]}`]: Chart;
+  [K in ChartKey]: Chart;
 };
+type ChartKey =
+  | `${Chart["name"]}-${Chart["position"]}`
+  | `${Chart["position"]}-vs-${Chart["rfiPosition"]}-RFI`;
 
 export const HAND_KEYS = [
   // Row 1

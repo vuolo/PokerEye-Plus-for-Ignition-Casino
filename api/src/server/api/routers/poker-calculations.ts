@@ -58,11 +58,14 @@ export const pokerCalculationsRouter = createTRPCRouter({
           return {
             status: 200,
             message: "Calculated the best preflop action(s).",
-            result: getBestPreflopAction_6max_100bb({
-              hand: input.hand,
-              position: input.position,
-              rfiPosition: input.rfiPosition,
-            }),
+            result: {
+              ...getBestPreflopAction_6max_100bb({
+                hand: input.hand,
+                position: input.position,
+                rfiPosition: input.rfiPosition,
+              }),
+              input,
+            },
           };
         default:
           throw new TRPCError({

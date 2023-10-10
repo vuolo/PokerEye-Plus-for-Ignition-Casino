@@ -7,53 +7,35 @@ const DEFAULT_HAND_MAP: HandMap = HAND_KEYS.reduce((acc, hand) => {
 }, {} as HandMap);
 
 export type EasyHandMapParams = {
-  hands: (keyof HandMap)[];
-  action: Action;
-  percentage?: number;
-  numBigBlinds: number;
-};
-
-export const easyHandMap = ({
-  hands,
-  action,
-  percentage = 1.0,
-  numBigBlinds,
-}: EasyHandMapParams): HandMap => {
-  return {
-    ...DEFAULT_HAND_MAP,
-    ...Object.fromEntries(
-      hands.map((hand) => [hand, [{ action, percentage, numBigBlinds }]]),
-    ),
-  } as HandMap;
-};
-
-export type EasyHandMapWithMultipleActionsForDifferentHandsParams = {
   hands: (keyof HandMap)[][];
   actions: Action[];
   percentages?: number[];
   numBigBlinds: number[];
 };
 
-// TODO: rework because T4s says "Raise" but should say "Limp" (for SB)
-export const easyHandMapWithMultipleActionsForDifferentHands = ({
+export const easyHandMap = ({
   hands,
   actions,
   percentages = Array<number>(actions.length).fill(1.0),
   numBigBlinds,
-}: EasyHandMapWithMultipleActionsForDifferentHandsParams): HandMap => {
+}: EasyHandMapParams): HandMap => {
   return {
     ...DEFAULT_HAND_MAP,
     ...Object.fromEntries(
-      hands.flat().map((hand, i) => [
-        hand,
-        [
-          {
-            action: actions[i % actions.length],
-            percentage: percentages[i % percentages.length],
-            numBigBlinds: numBigBlinds[i % numBigBlinds.length],
-          },
-        ],
-      ]),
+      hands.flatMap((handGroup, index) => {
+        return handGroup.map((hand) => {
+          return [
+            hand,
+            [
+              {
+                action: actions[index],
+                percentage: percentages[index],
+                numBigBlinds: numBigBlinds[index],
+              },
+            ],
+          ];
+        });
+      }),
     ),
   } as HandMap;
 };
