@@ -1,4 +1,3 @@
-export type Hand = [string, string];
 export type Position = "LJ" | "HJ" | "CO" | "BTN" | "SB" | "BB";
 export type RfiPosition = Exclude<Position, "BB">;
 export type Action = "Limp" | "Raise" | "Fold";
@@ -219,3 +218,5 @@ export const HAND_KEYS = [
 export type HandMap = {
   [K in (typeof HAND_KEYS)[number]]: BestAction[];
 };
+
+export type Hand = (typeof HAND_KEYS)[number];

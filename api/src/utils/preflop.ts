@@ -17,6 +17,8 @@ export const getBestPreflopAction_6max_100bb = ({
   rfiPosition,
 }: GetBestPreflopActionsParams): GetBestPreflopActionsResult => {
   return {
-    bestActions: [],
+    bestActions: rfiPosition
+      ? []
+      : charts_6max_100bb[`RFI-${position}`]?.handMap[hand] ?? [],
   };
 };

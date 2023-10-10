@@ -1,7 +1,8 @@
 import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { z } from "zod";
 
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { HAND_KEYS } from "~/types/chart";
 import { getBestPreflopAction_6max_100bb } from "~/utils/preflop";
 
 export const pokerCalculationsRouter = createTRPCRouter({
@@ -10,7 +11,8 @@ export const pokerCalculationsRouter = createTRPCRouter({
       z.object({
         maxPlayers: z.enum(["4", "6"]),
         numBigBlinds: z.number().int().positive(),
-        hand: z.array(z.string().length(3)).length(2), // e.g. ["AKo", "T9o"]
+        hand: z.enum(HAND_KEYS),
+        // TODO: add const like HAND_KEYS for position and rfiPosition in ~/types/chart.ts
         position: z.enum(["LJ", "HJ", "CO", "BTN", "SB", "BB"]),
         rfiPosition: z.enum(["LJ", "HJ", "CO", "BTN", "SB"]).optional(), // "rfi" means "raise first in" (i.e. the first player to raise preflop)
       }),
@@ -31,11 +33,6 @@ export const pokerCalculationsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Missing 'hand' (e.g. ['AKo', 'T9o']).",
-        });
-      if (input.hand.length !== 2 || input.hand[0] === input.hand[1])
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid 'hand' (e.g. ['AKo', 'T9o']).",
         });
       if (!input.position)
         throw new TRPCError({
@@ -62,7 +59,7 @@ export const pokerCalculationsRouter = createTRPCRouter({
             status: 200,
             message: "Calculated the best preflop action(s).",
             result: getBestPreflopAction_6max_100bb({
-              hand: input.hand as [string, string],
+              hand: input.hand,
               position: input.position,
               rfiPosition: input.rfiPosition,
             }),

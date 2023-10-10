@@ -26,3 +26,34 @@ export const easyHandMap = ({
     ),
   } as HandMap;
 };
+
+export type EasyHandMapWithMultipleActionsForDifferentHandsParams = {
+  hands: (keyof HandMap)[][];
+  actions: Action[];
+  percentages?: number[];
+  numBigBlinds: number[];
+};
+
+// TODO: rework because T4s says "Raise" but should say "Limp" (for SB)
+export const easyHandMapWithMultipleActionsForDifferentHands = ({
+  hands,
+  actions,
+  percentages = Array<number>(actions.length).fill(1.0),
+  numBigBlinds,
+}: EasyHandMapWithMultipleActionsForDifferentHandsParams): HandMap => {
+  return {
+    ...DEFAULT_HAND_MAP,
+    ...Object.fromEntries(
+      hands.flat().map((hand, i) => [
+        hand,
+        [
+          {
+            action: actions[i % actions.length],
+            percentage: percentages[i % percentages.length],
+            numBigBlinds: numBigBlinds[i % numBigBlinds.length],
+          },
+        ],
+      ]),
+    ),
+  } as HandMap;
+};
