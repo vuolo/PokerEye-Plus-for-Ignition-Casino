@@ -1626,10 +1626,8 @@ class PokerTable {
 
         // Add a "POSITION UPDATED" action to the action history of the current player (place it after the last occurance of the "NEXT HAND" action)
         curPlayer.actionHistory.splice(
-          curPlayer.actionHistory.reduceRight(
-            (acc, action, index) =>
-              action.action === "NEXT HAND" && acc === -1 ? index : acc,
-            -1
+          curPlayer.actionHistory.findLastIndex(
+            (action) => action.action === "NEXT HAND"
           ) + 1,
           0,
           {
@@ -1637,11 +1635,6 @@ class PokerTable {
             timestamp: formatTimestamp(new Date()),
           }
         );
-
-        // curPlayer.actionHistory.push({
-        //   action: `POSITION UPDATED · ${curPlayer.position}`,
-        //   timestamp: formatTimestamp(new Date()),
-        // });
       }
 
       // 3. Return the current player with the "BTN" position (the dealer)
@@ -1891,10 +1884,8 @@ class PokerTable {
 
           // Add a "POSITION UPDATED" action to the action history of the current player (place it after the last occurance of the "NEXT HAND" action)
           player.actionHistory.splice(
-            player.actionHistory.reduceRight(
-              (acc, action, index) =>
-                action.action === "NEXT HAND" && acc === -1 ? index : acc,
-              -1
+            player.actionHistory.findLastIndex(
+              (action) => action.action === "NEXT HAND"
             ) + 1,
             0,
             {
