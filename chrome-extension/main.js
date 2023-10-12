@@ -815,7 +815,7 @@ class Player {
       .filter((card) => card !== null);
 
     // Update the hand if they have changed
-    if (JSON.stringify(newHand) !== JSON.stringify(this.holeCards)) {
+    if (JSON.stringify(newHand) !== JSON.stringify(this.hand)) {
       this.hand = newHand;
       if (this.hand.length === 0)
         logMessage(`${this.logMessagePrefix}Hand have been cleared.`, {
