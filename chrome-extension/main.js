@@ -433,34 +433,53 @@ class HUD {
   }
 
   displayBestActions() {
-    const bestActions =
-      this.pokerTable.players.values().find((player) => {
-        return player.seatNumber === this.pokerTable.myPlayerSeatNumber;
-      }).bestActions ?? [];
+    const myPlayer = this.pokerTable.players.get(
+      this.pokerTable.myPlayerSeatNumber
+    );
+    let bestActions = myPlayer?.bestActions ?? [];
+    // bestActions = [
+    //   {
+    //     action: "Raise",
+    //     percentage: 1,
+    //     numBigBlinds: 2.5,
+    //     amountToBet: 35.2,
+    //   },
+    // ];
 
+    const showTitle = false;
     const bestActionsInnerHTML = `
       <div class="pl-4 pt-2 justify-start h-full mb-[6px] flex flex-col">
         <div class="flex justify-start flex-col gap-[8px]">
-            <div class="flex flex-1 justify-center"><span class="text-lg font-bold text-orange-300 underline">${
-              bestActions.length > 0 ? "Best Actions" : ""
-            }</span></div>
+            ${
+              showTitle
+                ? `<div class="flex flex-1 justify-center">
+                    <span class="text-lg font-bold text-orange-300 underline">
+                      ${bestActions.length > 0 ? "Best Actions" : ""}
+                    </span>
+                  </div>`
+                : ""
+            }
             <div class="flex gap-[8px]">
               ${bestActions
                 .map(
                   (bestAction) =>
-                    `<label style="-webkit-tap-highlight-color: transparent; padding: 4px 16px;" class="ring-1 ring-orange-300 hover:opacity-80 w-[132px] text-sm h-[40px] bg-[rgba(0,0,0,0.3)] text-white items-center border-0 rounded-[8px] cursor-pointer flex flex-col font-bold overflow-hidden outline-none desktopCheckboxButton Desktop landscape" data-qa="foldPreselectButton">
+                    `<label style="-webkit-tap-highlight-color: transparent; padding: 4px 16px;" class="ring-1 ring-orange-300 hover:bg-orange-100 hover:text-gray-900 w-[132px] text-sm h-[40px] bg-[rgba(0,0,0,0.3)] text-white items-center border-0 rounded-[8px] cursor-pointer flex flex-col font-bold overflow-hidden outline-none desktopCheckboxButton Desktop landscape justify-center" data-qa="foldPreselectButton">
                     <span class="text-center w-full">${bestAction.action}</span>
-                    <span class="text-center w-full">${
-                      bestAction.numBigBlinds != 0
-                        ? `($${formatCurrencyLikeIgnition(
+                    ${
+                      bestAction.numBigBlinds != 0 && bestAction.amountToBet
+                        ? `<span class="text-center w-full">($${formatCurrencyLikeIgnition(
                             bestAction.amountToBet
-                          )} - ${bestAction.numBigBlinds}bb)`
+                          )} - ${bestAction.numBigBlinds}bb)</span>`
                         : ""
-                    }</span>
-                    <span class="text-center w-full">[${roundFloat(
-                      bestAction.percentage * 100,
-                      0
-                    )}%]</span>
+                    }
+                    ${
+                      bestAction.percentage !== 1
+                        ? `<span class="text-center w-full">[${roundFloat(
+                            bestAction.percentage * 100,
+                            0
+                          )}%]</span>`
+                        : ""
+                    }
                   </label>`
                 )
                 .join("")}
@@ -468,24 +487,75 @@ class HUD {
         </div>
       </div>`;
 
+    let bestActionsContainer;
     const foundBestActionsContainer = this.doc.querySelector(
       "#PokerEyePlus-bestActionsContainer"
     );
     if (foundBestActionsContainer) {
       if (foundBestActionsContainer.innerHTML !== bestActionsInnerHTML)
         foundBestActionsContainer.innerHTML = bestActionsInnerHTML;
-      return;
+      bestActionsContainer = foundBestActionsContainer;
+    } else {
+      bestActionsContainer = this.doc.createElement("div");
+      bestActionsContainer.id = "PokerEyePlus-bestActionsContainer";
+      bestActionsContainer.innerHTML = bestActionsInnerHTML;
+      this.bestActionsContainer = bestActionsContainer;
+
+      // Place it in the footer container's child element with class 'right'
+      this.footerContainer
+        .querySelector(".right")
+        .appendChild(bestActionsContainer);
     }
 
-    const bestActionsContainer = this.doc.createElement("div");
-    bestActionsContainer.id = "PokerEyePlus-bestActionsContainer";
-    bestActionsContainer.innerHTML = bestActionsInnerHTML;
-    this.bestActionsContainer = bestActionsContainer;
+    // Attach onClick handlers to either the existing or the new container
+    const actionLabels = bestActionsContainer.querySelectorAll(
+      '[data-qa="foldPreselectButton"]'
+    );
+    actionLabels.forEach((label, index) => {
+      const bestAction = bestActions[index];
+      label.onclick = () => {
+        switch (bestAction.action) {
+          case "Fold":
+            this.doc.querySelector('button[data-qa="foldButton"]')?.click();
+            this.doc.querySelector('button[data-qa="checkButton"]')?.click();
+            break;
+          case "Check":
+            this.doc.querySelector('button[data-qa="checkButton"]')?.click();
+            this.doc.querySelector('button[data-qa="callButton"]')?.click();
+            break;
+          case "Call":
+            this.doc.querySelector('button[data-qa="callButton"]')?.click();
+            this.doc.querySelector('button[data-qa="checkButton"]')?.click();
+            break;
+          case "Limp":
+            this.doc.querySelector('button[data-qa="callButton"]')?.click();
+            this.doc.querySelector('button[data-qa="checkButton"]')?.click();
+            break;
+          default:
+            // Check if it's a raise
+            if (!bestAction.amountToBet) break;
 
-    // Place it in the footer container's child element with class 'right'
-    this.footerContainer
-      .querySelector(".right")
-      .appendChild(bestActionsContainer);
+            // Select the only <input> element in the this.footerContainer.querySelector(".right")
+            const raiseInput = this.footerContainer
+              ?.querySelector(".right")
+              ?.querySelector("input:not([type='checkbox'])");
+            if (!raiseInput) break;
+
+            // Set the raise amount (ex: value="56.00")
+            setNativeValue(
+              raiseInput,
+              Math.abs(bestAction.amountToBet).toFixed(2)
+            );
+
+            // Click the "bet" or "raise" button (depending on the situation, and after waiting for the button to reflect the set input)
+            setTimeout(() => {
+              this.doc.querySelector('button[data-qa="betButton"]')?.click();
+              this.doc.querySelector('button[data-qa="raiseButton"]')?.click();
+            }, 100);
+            break;
+        }
+      };
+    });
   }
 
   hideBestActions() {
@@ -907,8 +977,10 @@ class Player {
   updateTurnToAct(isTurnToAct) {
     if (isTurnToAct !== this.isTurnToAct) {
       // Reset all other players' turn to act and set this player's turn to act
-      for (const player of this.pokerTable.players.values())
+      for (const player of this.pokerTable.players.values()) {
         player.isTurnToAct = player.id === this.id ? isTurnToAct : false;
+        if (!player.isTurnToAct && player.isMyPlayer) player.bestActions = [];
+      }
 
       // Check if it is my turn to act
       if (this.isTurnToAct && this.isMyPlayer) {
@@ -947,8 +1019,6 @@ class Player {
               }
             );
         }
-      } else if (!this.isTurnToAct && this.isMyPlayer) {
-        this.bestActions = [];
       }
     }
   }
@@ -2367,4 +2437,16 @@ function generateUUID() {
     generateRandom16BitNumber() +
     generateRandom16BitNumber()
   );
+}
+
+function setNativeValue(element, value) {
+  let lastValue = element.value;
+  element.value = value;
+  let event = new Event("input", { target: element, bubbles: true });
+  // React 15
+  event.simulated = true;
+  // React 16
+  let tracker = element._valueTracker;
+  if (tracker) tracker.setValue(lastValue);
+  element.dispatchEvent(event);
 }
