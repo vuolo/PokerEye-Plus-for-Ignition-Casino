@@ -489,8 +489,8 @@ class HUD {
       </div>`;
 
     // Locate the .right container and add transition classes
-    const rightContainer = this.footerContainer.querySelector(".right");
-    rightContainer.classList.add(
+    const rightContainer = this.footerContainer?.querySelector(".right");
+    rightContainer?.classList?.add(
       "transition-all",
       "ease-in-out",
       "duration-300"
@@ -630,6 +630,7 @@ class HUD {
       this.pokerTable.myPlayerSeatNumber
     );
     this.myPlayer = myPlayer;
+    if (!myPlayer) return;
 
     const detailsPanel = `
       <!-- Most Recent Action -->
@@ -835,6 +836,8 @@ class HUD {
   }
 
   isMenuOffScreen() {
+    if (!this.pokerEyeMenu) return false;
+    
     let rootWidth = this.root.offsetWidth;
     let rootHeight = this.root.offsetHeight;
     let menuX = parseInt(this.pokerEyeMenu.style.left, 10);
