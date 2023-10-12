@@ -11,7 +11,7 @@
 // small blind limp, a 3.5x raise size is used. When 4-betting from out of position a 2.5x raise size is used. When 4-betting from in position a 2.3x raise size is used.
 
 import type { Charts } from "~/types/chart";
-import { easyHandMap } from "~/utils/chart";
+import { defaultHandMap, easyHandMap } from "~/utils/chart";
 
 export const charts = {} as Charts;
 
@@ -1681,7 +1681,6 @@ charts["BB-vs-CO-RFI"] = {
         "AJo",
         "KJo",
         "QJo", // ...
-        "J9s",
         "J8s",
         "J7s",
         "J6s",
@@ -1753,10 +1752,184 @@ charts["BB-vs-BTN-RFI"] = {
   handMap: easyHandMap({
     hands: [
       // [3Bet]
-      [],
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs", // ...
+        "A6s",
+        "A5s",
+        "A4s",
+
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+
+        // Row 3
+        "AQo",
+        "KQo",
+        "QQ",
+        "QJs",
+        "QTs",
+        "Q9s",
+
+        // Row 4
+        // ...
+        "JJ",
+        "JTs",
+        "J9s",
+        "J8s",
+
+        // Row 5
+        "TT",
+        "T9s",
+        "T8s",
+
+        // Row 6
+        // ...
+        "99",
+        "98s",
+        "97s",
+
+        // Row 7
+        // ...
+        "88",
+        "87s",
+
+        // Row 8
+        // ...
+        "76s",
+
+        // Row 9
+        // ...
+        "65s",
+
+        // Row 10
+        // ...
+        "54s",
+      ],
 
       // [Call]
-      [],
+      [
+        // Row 1
+        // ...
+        "A9s",
+        "A8s",
+        "A7s", // ...
+        "A3s",
+        "A2s",
+
+        // Row 2
+        // ...
+        "K8s",
+        "K7s",
+        "K6s",
+        "K5s",
+        "K4s",
+        "K3s",
+        "K2s",
+
+        // Row 3
+        // ...
+        "Q8s",
+        "Q7s",
+        "Q6s",
+        "Q5s",
+        "Q4s",
+        "Q3s",
+        "Q2s",
+
+        // Row 4
+        "AJo",
+        "KJo",
+        "QJo", // ...
+        "J7s",
+        "J6s",
+        "J5s",
+        "J4s",
+        "J3s",
+        "J2s",
+
+        // Row 5
+        "ATo",
+        "KTo",
+        "QTo",
+        "JTo", // ...
+        "T7s",
+        "T6s",
+        "T5s",
+        "T4s",
+        "T3s",
+        "T2s",
+
+        // Row 6
+        "A9o",
+        "K9o",
+        "Q9o",
+        "J9o",
+        "T9o", // ...
+        "96s",
+        "95s",
+        "94s",
+
+        // Row 7
+        "A8o",
+        "K8o",
+        "Q8o",
+        "J8o",
+        "T8o",
+        "98o", // ...
+        "86s",
+        "85s",
+        "84s",
+
+        // Row 8
+        "A7o",
+        "K7o", // ...
+        "87o",
+        "77", // ...
+        "75s",
+        "74s",
+        "73s",
+
+        // Row 9
+        "A6o",
+        "K6o", // ...
+        "76o",
+        "66", // ...
+        "64s",
+        "63s",
+        "62s",
+
+        // Row 10
+        "A5o", // ...
+        "65o",
+        "55", // ...
+        "53s",
+        "52s",
+
+        // Row 11
+        "A4o", // ...
+        "54o",
+        "44",
+        "43s",
+        "42s",
+
+        // Row 12
+        "A3o", // ...
+        "33",
+        "32s",
+
+        // Row 13
+        // ...
+        "22",
+      ],
     ],
     actions: ["3Bet", "Call"],
     numBigBlinds: [4.0, 2.5],
@@ -2091,13 +2264,123 @@ charts["BB-vs-SB-Limp"] = {
   handMap: easyHandMap({
     hands: [
       // [Raise]
-      [],
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s", // ...
+        "A5s",
+        "A4s",
+        "A3s",
 
-      // [Call]
-      [],
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s", // ...
+        "K6s",
+        "K5s",
+
+        // Row 3
+        "AQo",
+        "KQo",
+        "QQ",
+        "QJs",
+        "QTs",
+        "Q9s",
+
+        // Row 4
+        "AJo",
+        "KJo", // ...
+        "JJ",
+        "JTs",
+        "J9s",
+        "J8s",
+
+        // Row 5
+        "ATo", // ...
+        "JTo",
+        "TT",
+        "T9s",
+        "T8s", // ...
+        "T4s",
+        "T3s",
+        "T2s",
+
+        // Row 6
+        // ...
+        "T9o",
+        "99",
+        "98s",
+        "97s", // ...
+        "94s",
+        "93s",
+        "92s",
+
+        // Row 7
+        // ...
+        "88",
+        "87s",
+        "86s", // ...
+        "84s",
+
+        // Row 8
+        // ...
+        "J7o", // ...
+        "77",
+        "76s",
+        "75s",
+        "74s",
+        "73s",
+
+        // Row 9
+        // ...
+        "Q6o",
+        "J6o",
+        "T6o",
+        "96o", // ...
+        "66",
+        "65s",
+        "64s",
+        "63s",
+
+        // Row 10
+        "A5o",
+        "K5o",
+        "Q5o",
+        "J5o",
+        "T5o",
+        "95o",
+        "85o",
+        "75o", // ...
+        "55",
+        "54s",
+
+        // Row 11
+        // ...
+        "K4o",
+        "Q4o", // ...
+        "74o", // ...
+        "44",
+
+        // Row 12
+        // ...
+        "33",
+        "32s",
+      ],
     ],
-    actions: ["Raise", "Call"],
-    numBigBlinds: [3.5, 2.5],
+    actions: ["Raise"],
+    numBigBlinds: [3.5],
+    defaultHandMap: defaultHandMap({
+      action: "Call",
+      numBigBlinds: 2.5,
+    }),
   }),
 };
 
@@ -2109,12 +2392,138 @@ charts["BB-vs-SB-Raise"] = {
   handMap: easyHandMap({
     hands: [
       // [3Bet]
-      [],
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs", // ...
+        "A5s",
+        "A4s",
 
-      // [Call]
-      [],
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+
+        // Row 3
+        "AQo", // ...
+        "QQ",
+        "QJs",
+
+        // Row 4
+        // ...
+        "JJ", // ...
+        "J5s",
+
+        // Row 5
+        // ...
+        "TT", // ...
+        "T5s",
+
+        // Row 6
+        // ...
+        "99", // ...
+        "95s",
+
+        // Row 7
+        // ...
+        "J8o", // ...
+        "88",
+        "87s",
+
+        // Row 8
+        // ...
+        "J7o",
+        "T7o", // ...
+        "76s",
+
+        // Row 9
+        "A6o",
+        "K6o",
+        "Q6o", // ...
+        "65s",
+
+        // Row 10
+        // ...
+        "K5o", // ...
+        "54s",
+      ],
+
+      // [Fold]
+      [
+        // Row 7
+        // ...
+        "83s",
+        "82s",
+
+        // Row 8
+        // ...
+        "72s",
+
+        // Row 9
+        // ...
+        "J6o",
+        "T6o",
+        "96o",
+
+        // Row 10
+        // ...
+        "Q5o",
+        "J5o",
+        "T5o",
+        "95o",
+        "85o",
+        "75o",
+        "65o",
+
+        // Row 11
+        // ...
+        "K4o",
+        "Q4o",
+        "J4o",
+        "T4o",
+        "94o",
+        "84o",
+        "74o",
+        "64o",
+
+        // Row 12
+        // ...
+        "K3o",
+        "Q3o",
+        "J3o",
+        "T3o",
+        "93o",
+        "83o",
+        "73o",
+        "63o",
+        "53o",
+        "43o",
+
+        // Row 13
+        // ...
+        "K2o",
+        "Q2o",
+        "J2o",
+        "T2o",
+        "92o",
+        "82o",
+        "72o",
+        "62o",
+        "52o",
+        "42o",
+        "32o",
+      ],
     ],
-    actions: ["3Bet", "Call"],
-    numBigBlinds: [4.0, 2.5],
+    actions: ["3Bet", "Fold"],
+    numBigBlinds: [4.0, 0.0],
+    defaultHandMap: defaultHandMap({
+      action: "Call",
+      numBigBlinds: 2.5,
+    }),
   }),
 };
