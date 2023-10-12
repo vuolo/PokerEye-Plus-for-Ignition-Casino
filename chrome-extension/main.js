@@ -776,7 +776,7 @@ class Player {
             })();
           else if (!this.pokerTable.firstHandDealt)
             logMessage(
-              `${this.logMessagePrefix}> Cannot calculate best action(s). You must wait for the next round of dealt hands for accuracy.`,
+              `${this.logMessagePrefix}> Cannot calculate best action(s). You must wait for the next hands to be dealt for calculation accuracy.`,
               {
                 color: "cornsilk",
                 fontStyle: "italic",
@@ -818,17 +818,14 @@ class Player {
     //  5. Check if the player's last occurrence of the "NEXT HAND" action is within 2 seconds of my last occurrence of the "NEXT HAND" action (Math.abs(player.actionHistory[i].timestamp - this.actionHistory[j].timestamp) <= 2 seconds), but note (important) the format of .timestamp is `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}.${mmm}`
     //  6. Check if the player's last action was "RAISE", "BET", or "ALL-IN" and the absolute value of action.amountBet is ≥ 2bb (action.amountBet >= 2 * this.pokerTable.blinds.big), and push them to a list stored in a map of players who RFI'd in possibleRfiActionsByPlayer, where each key is the player.id and each value is a list of possible RFI actions
     //  7. Store the earliest possible RFI action in earliestRfiAction
-    //  8. Store the last possible RFI action in lastRfiAction
-    //  9. (done) Store the position of the earliest RFI action in rfiPosition
+    //  8. (done) Store the position of the earliest RFI action in rfiPosition
     const possibleRfiActionsByPlayer = new Map();
     let earliestRfiAction = Infinity;
-    let lastRfiAction = -Infinity;
     let rfiPosition = undefined;
 
-    const myLastNextHandIndex = this.actionHistory.reduceRight(
-      (acc, action, index) =>
-        action.action === "NEXT HAND" && acc === -1 ? index : acc,
-      -1
+    // Find my last occurrence of the "NEXT HAND" action
+    const myLastNextHandIndex = this.actionHistory.findLastIndex(
+      (action) => action.action === "NEXT HAND"
     );
     const myLastNextHand = this.actionHistory[myLastNextHandIndex];
 
@@ -836,53 +833,45 @@ class Player {
       if (!myLastNextHand || player.id === this.id || player.isSittingOut())
         continue;
 
-      const lastNextHandIndex = player.actionHistory.reduceRight(
-        (acc, action, index) =>
-          action.action === "NEXT HAND" && acc === -1 ? index : acc,
-        -1
+      // Store the last occurrence of the "NEXT HAND" action
+      const lastNextHandIndex = player.actionHistory.findLastIndex(
+        (action) => action.action === "NEXT HAND"
       );
       if (lastNextHandIndex === -1) continue;
       const lastNextHand = player.actionHistory[lastNextHandIndex];
-      console.log("lastNextHand");
-      console.log(lastNextHand);
 
+      // Check if the last occurrence of the "NEXT HAND" action is within 2 seconds of my last occurrence of the "NEXT HAND" action
       if (
         Math.abs(
           new Date(lastNextHand.timestamp) - new Date(myLastNextHand.timestamp)
         ) <=
         2 * 1000 // 2 seconds (in milliseconds)
       ) {
-        const lastAction =
-          player.actionHistory[
-            player.actionHistory.findLastIndex(
-              (action) =>
-                action.action !== "NEXT HAND" &&
-                !action.action.startsWith("POSITION UPDATED") &&
-                !action.action.includes(" seconds left to make a move...")
-            )
-          ];
-        console.log("lastAction");
-        console.log(lastAction);
+        const lastActionIndex = player.actionHistory.findLastIndex(
+          (action) =>
+            action.action === "BET" ||
+            action.action === "RAISE" ||
+            action.action === "ALL-IN"
+        );
+        const lastAction = player.actionHistory[lastActionIndex];
         if (
-          ["BET", "RAISE", "ALL-IN"].some((rfiAction) =>
-            lastAction.action.includes(rfiAction)
-          ) &&
-          lastAction.amountBet >= 2 * this.pokerTable.blinds.big
+          lastAction &&
+          Math.abs(lastAction.amountBet) >= 2 * this.pokerTable.blinds.big
         ) {
-          console.log("RFI");
-          possibleRfiActionsByPlayer.set(player.id, lastAction);
+          possibleRfiActionsByPlayer.set(player.id, [
+            ...(possibleRfiActionsByPlayer.get(player.id) || []),
+            lastAction,
+          ]);
 
           const actionTimestamp = new Date(lastAction.timestamp).getTime();
           if (actionTimestamp < earliestRfiAction) {
             earliestRfiAction = actionTimestamp;
             rfiPosition = player.position;
           }
-          if (actionTimestamp > lastRfiAction) {
-            lastRfiAction = actionTimestamp;
-          }
         }
       }
     }
+
     if (this.pokerTable.rfiPosition !== rfiPosition) {
       this.pokerTable.rfiPosition = rfiPosition;
       logMessage(
@@ -917,7 +906,9 @@ class Player {
     logMessage(
       `${this.logMessagePrefix}> Calculating the best action for the hand \`${
         input.hand
-      }\`${rfiPosition ? ` versus ${rfiPosition} RFI` : ""}:`,
+      }\` as${input.position}${
+        rfiPosition ? ` versus ${rfiPosition}` : ""
+      } RFI:`,
       {
         color: "cornsilk",
       }
