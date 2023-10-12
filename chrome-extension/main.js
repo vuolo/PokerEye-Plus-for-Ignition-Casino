@@ -684,7 +684,6 @@ class Player {
     }${this.isMyPlayer ? " - you" : ""}): `;
 
     this.syncPlayerInfo();
-    displayAttribution();
   }
 
   syncPlayerInfo(runInstantly = true) {
@@ -748,7 +747,9 @@ class Player {
 
   updateTurnToAct(isTurnToAct) {
     if (isTurnToAct !== this.isTurnToAct) {
-      this.isTurnToAct = isTurnToAct;
+      // Reset all other players' turn to act and set this player's turn to act
+      for (const player of this.pokerTable.players.values())
+        player.isTurnToAct = player.id === this.id ? isTurnToAct : false;
 
       // Check if it is my turn to act
       if (this.isTurnToAct && this.isMyPlayer) {
@@ -761,18 +762,26 @@ class Player {
             color: "goldenrod",
           });
 
-          if (CALCULATE_BEST_ACTIONS)
+          if (CALCULATE_BEST_ACTIONS && this.pokerTable.firstHandDealt)
             void (async () => {
               this.bestActions = (await this.getBestActions()) ?? [];
               if (this.bestActions.length === 0)
                 logMessage(
-                  `${this.logMessagePrefix}> Could not calculate best action(s) for the current scenario.`,
+                  `${this.logMessagePrefix}> Could not calculate the best action(s) given the current scenario.`,
                   {
                     color: "cornsilk",
                     fontStyle: "italic",
                   }
                 );
             })();
+          else if (!this.pokerTable.firstHandDealt)
+            logMessage(
+              `${this.logMessagePrefix}> Cannot calculate best action(s). You must wait for the next round of dealt hands for accuracy.`,
+              {
+                color: "cornsilk",
+                fontStyle: "italic",
+              }
+            );
         }
       } else if (!this.isTurnToAct && this.isMyPlayer) {
         this.bestActions = [];
@@ -805,8 +814,82 @@ class Player {
     //  1. Loop through all players (this.pokerTable.players.values())
     //  2. Check if the player is not this player (player.id !== this.id)
     //  3. Check if the player is not sitting out (player.isSittingOut())
-    //  4. Loop through the player's action history (player.actionHistory) in reverse order
-    // const rfiPosition =
+    //  4. Loop through the player's action history (player.actionHistory) in reverse order to find the last occurrence of "NEXT HAND"
+    //  5. Check if the player's last occurrence of the "NEXT HAND" action is within 2 seconds of my last occurrence of the "NEXT HAND" action (Math.abs(player.actionHistory[i].timestamp - this.actionHistory[j].timestamp) <= 2 seconds), but note (important) the format of .timestamp is `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}.${mmm}`
+    //  6. Check if the player's last action was "RAISE", "BET", or "ALL-IN" and the absolute value of action.amountBet is ≥ 2bb (action.amountBet >= 2 * this.pokerTable.blinds.big), and push them to a list stored in a map of players who RFI'd in possibleRfiActionsByPlayer, where each key is the player.id and each value is a list of possible RFI actions
+    //  7. Store the earliest possible RFI action in earliestRfiAction
+    //  8. Store the last possible RFI action in lastRfiAction
+    //  9. (done) Store the position of the earliest RFI action in rfiPosition
+    const possibleRfiActionsByPlayer = new Map();
+    let earliestRfiAction = Infinity;
+    let lastRfiAction = -Infinity;
+    let rfiPosition = undefined;
+
+    const myLastNextHandIndex = this.actionHistory.reduceRight(
+      (acc, action, index) =>
+        action.action === "NEXT HAND" && acc === -1 ? index : acc,
+      -1
+    );
+    const myLastNextHand = this.actionHistory[myLastNextHandIndex];
+
+    for (const player of this.pokerTable.players.values()) {
+      if (!myLastNextHand || player.id === this.id || player.isSittingOut())
+        continue;
+
+      const lastNextHandIndex = player.actionHistory.reduceRight(
+        (acc, action, index) =>
+          action.action === "NEXT HAND" && acc === -1 ? index : acc,
+        -1
+      );
+      if (lastNextHandIndex === -1) continue;
+      const lastNextHand = player.actionHistory[lastNextHandIndex];
+      console.log("lastNextHand");
+      console.log(lastNextHand);
+
+      if (
+        Math.abs(
+          new Date(lastNextHand.timestamp) - new Date(myLastNextHand.timestamp)
+        ) <=
+        2 * 1000 // 2 seconds (in milliseconds)
+      ) {
+        const lastAction =
+          player.actionHistory[
+            player.actionHistory.findLastIndex(
+              (action) =>
+                action.action !== "NEXT HAND" &&
+                !action.action.startsWith("POSITION UPDATED") &&
+                !action.action.includes(" seconds left to make a move...")
+            )
+          ];
+        console.log("lastAction");
+        console.log(lastAction);
+        if (
+          ["BET", "RAISE", "ALL-IN"].some((rfiAction) =>
+            lastAction.action.includes(rfiAction)
+          ) &&
+          lastAction.amountBet >= 2 * this.pokerTable.blinds.big
+        ) {
+          console.log("RFI");
+          possibleRfiActionsByPlayer.set(player.id, lastAction);
+
+          const actionTimestamp = new Date(lastAction.timestamp).getTime();
+          if (actionTimestamp < earliestRfiAction) {
+            earliestRfiAction = actionTimestamp;
+            rfiPosition = player.position;
+          }
+          if (actionTimestamp > lastRfiAction) {
+            lastRfiAction = actionTimestamp;
+          }
+        }
+      }
+    }
+    if (this.pokerTable.rfiPosition !== rfiPosition) {
+      this.pokerTable.rfiPosition = rfiPosition;
+      logMessage(
+        `${this.logMessagePrefix}> RFI position detected: ${rfiPosition}`,
+        { color: "cornsilk" }
+      );
+    }
 
     // Set up the API request
     const apiUrl = new URL(
@@ -819,7 +902,7 @@ class Player {
       numBigBlinds: 100,
       hand: formatHandForAPI(this.hand),
       position: this.position,
-      // rfiPosition: "SB",
+      rfiPosition,
     };
     params.append("input", JSON.stringify({ 0: { json: input } }));
     apiUrl.search = params.toString();
@@ -832,7 +915,9 @@ class Player {
       console.log(bodyData["0"]?.json);
     }
     logMessage(
-      `${this.logMessagePrefix}> Calculating the best action for the hand \`${bo}\`:`,
+      `${this.logMessagePrefix}> Calculating the best action for the hand \`${
+        input.hand
+      }\`${rfiPosition ? ` versus ${rfiPosition} RFI` : ""}:`,
       {
         color: "cornsilk",
       }
@@ -859,9 +944,21 @@ class Player {
       }
 
       // Log the best action(s)
-      logMessage(`${this.logMessagePrefix}> Best Action(s) Received:`, {
+      // type BestAction = {
+      //   action: Action;
+      //   percentage?: number; // e.g. 0.5 = 50%
+      //   numBigBlinds: number; // e.g. 2.5 = 2.5bb, 3 = 3bb, 3.5 = 3.5bb
+      // };
+      logMessage(`${this.logMessagePrefix}> Best Action(s) Calculated:`, {
         color: "cornsilk",
       });
+      for (const bestAction of bestActions)
+        logMessage(
+          `${this.logMessagePrefix} • ${bestAction?.action} (${bestAction?.numBigBlinds}) [${bestAction?.percentage}]`,
+          {
+            color: "cornsilk",
+          }
+        );
 
       return bestActions;
     } catch (error) {
@@ -1011,12 +1108,19 @@ class Player {
         )?.innerText
       );
 
-      // Check if the player's current action is different from the previous action
+      // Check if the player's current action is different from the previous action (also sift through "NEXT HAND" and startsWith("POSITION UPDATED") actions)
       if (
         !currentAction ||
         (this.actionHistory.length > 0 &&
           this.actionHistory[this.actionHistory.length - 1].action ===
-            currentAction)
+            currentAction) ||
+        this.actionHistory[
+          this.actionHistory.findLastIndex(
+            (action) =>
+              action.action !== "NEXT HAND" &&
+              !action.action.startsWith("POSITION UPDATED")
+          )
+        ]?.action === currentAction
       )
         return this.actionHistory[this.actionHistory.length - 1] || null;
 
@@ -1130,6 +1234,7 @@ class PokerTable {
     this.sidePots = [];
 
     this.logMessagePrefix = `(Table #${this.slotNumber}): `;
+    displayAttribution();
 
     this.syncTableInfo();
     this.hud = new HUD(this);
@@ -1204,6 +1309,7 @@ class PokerTable {
         action: "NEXT HAND",
         timestamp: formatTimestamp(new Date()),
       });
+    this.rfiPosition = undefined;
     this.updatePlayerPositions();
   }
 
