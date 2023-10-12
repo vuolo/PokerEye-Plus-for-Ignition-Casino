@@ -436,7 +436,8 @@ class HUD {
     const myPlayer = this.pokerTable.players.get(
       this.pokerTable.myPlayerSeatNumber
     );
-    let bestActions = myPlayer?.bestActions ?? [];
+    if (!myPlayer || !myPlayer.isTurnToAct) return;
+    let bestActions = myPlayer.bestActions ?? [];
     // bestActions = [
     //   {
     //     action: "Raise",
@@ -486,6 +487,14 @@ class HUD {
             </div>
         </div>
       </div>`;
+
+    // Locate the .right container and add transition classes
+    const rightContainer = this.footerContainer.querySelector(".right");
+    rightContainer.classList.add(
+      "transition-all",
+      "ease-in-out",
+      "duration-300"
+    );
 
     let bestActionsContainer;
     const foundBestActionsContainer = this.doc.querySelector(
