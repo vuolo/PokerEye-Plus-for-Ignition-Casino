@@ -1637,10 +1637,10 @@ class PokerTable {
         `${this.logMessagePrefix}${
           (smallBlind !== this.blinds.small || bigBlind !== this.blinds.big) &&
           gameType === this.gameType
-            ? `Blinds updated: ${getUpdatedBlindsMessage}`
+            ? `Blinds updated: ${getUpdatedBlindsMessage()}`
             : gameType !== this.gameType
             ? `Game type updated: ${gameType}`
-            : `Blinds and game type updated: ${getUpdatedBlindsMessage} · ${gameType}`
+            : `Blinds and game type updated: ${getUpdatedBlindsMessage()} · ${gameType}`
         }`,
         { color: "mediumpurple" }
       );
