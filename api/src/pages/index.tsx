@@ -9,7 +9,6 @@ export default function Home() {
       numBigBlinds: 100,
       hand: "83s",
       position: "BB",
-      rfiPosition: "SB",
     });
 
   return (

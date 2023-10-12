@@ -1,3 +1,5 @@
+const CALCULATE_BEST_ACTIONS = true;
+const DEBUG_API_REQUESTS = false;
 const TICK_RATE = 100; // ms
 const LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE = false;
 const ENABLE_HUD_VISIBILITY_BY_DEFAULT = true;
@@ -348,7 +350,7 @@ class HUD {
 
     logMessage(
       `${this.pokerTable.logMessagePrefix}Show BB toggled ${
-        this.isVisible ? "on" : "off"
+        this.showBB ? "on" : "off"
       }`,
       { color: "cyan" }
     );
@@ -674,6 +676,7 @@ class Player {
     this.actionHistory = [];
     this.actionHistoryPerHand = new Map();
     this.isTurnToAct = false;
+    this.bestActions = [];
     this.position = null;
 
     this.logMessagePrefix = `(Table #${this.pokerTable.slotNumber}, Seat #${
@@ -718,7 +721,8 @@ class Player {
     this.numBigBlinds = undefined;
   }
 
-  resetActionHistory() {
+  resetActionHistory(resetBalanceHistory = true) {
+    if (resetBalanceHistory) this.resetBalanceHistory();
     this.actionHistory = [];
     this.actionHistoryPerHand = new Map();
     this.isTurnToAct = false;
@@ -730,20 +734,143 @@ class Player {
   isSittingOut = () => {
     const currentAction = this.getCurrentAction();
 
-    return this.actionHistory.length === 0
+    return this.hand.length === 2
+      ? false
+      : this.actionHistory.length === 0
       ? !currentAction
         ? true
         : currentAction?.action === "SITTING OUT..."
       : this.actionHistory[this.actionHistory.length - 1].action ===
           "SITTING OUT..." ||
-          this.actionHistory[this.actionHistory.length - 1].action ===
-            "NEW PLAYER";
+        this.actionHistory[this.actionHistory.length - 1].action ===
+          "NEW PLAYER";
   };
+
+  updateTurnToAct(isTurnToAct) {
+    if (isTurnToAct !== this.isTurnToAct) {
+      this.isTurnToAct = isTurnToAct;
+
+      // Check if it is my turn to act
+      if (this.isTurnToAct && this.isMyPlayer) {
+        // Refetch hand and position in case they aren't up to date
+        this.getHand();
+        this.pokerTable.updatePlayerPositions();
+
+        if (this.hand.length === 2 && this.position !== null) {
+          logMessage(`${this.logMessagePrefix}It's your turn to act.`, {
+            color: "goldenrod",
+          });
+
+          if (CALCULATE_BEST_ACTIONS)
+            void (async () => {
+              this.bestActions = (await this.getBestActions()) ?? [];
+              if (this.bestActions.length === 0)
+                logMessage(
+                  `${this.logMessagePrefix}> Could not calculate best action(s) for the current scenario.`,
+                  {
+                    color: "cornsilk",
+                    fontStyle: "italic",
+                  }
+                );
+            })();
+        }
+      } else if (!this.isTurnToAct && this.isMyPlayer) {
+        this.bestActions = [];
+      }
+    }
+  }
 
   getNumBigBlinds = () =>
     this.pokerTable.blinds.big !== undefined
       ? roundFloat(this.balance / this.pokerTable.blinds.big, 2, false)
       : null;
+
+  getBestActions = async () => {
+    logMessage(`${this.logMessagePrefix}Calculating best action(s)...`, {
+      color: "cornsilk",
+    });
+
+    // If it is preflop, get the best preflop actions
+    if (this.pokerTable.board.length === 0)
+      return await this.getBestPreflopActions();
+    // TODO: If it is postflop, get the best postflop actions
+  };
+
+  getBestPreflopActions = async () => {
+    logMessage(`${this.logMessagePrefix}> Preflop detected.`, {
+      color: "cornsilk",
+    });
+
+    // Check if another player RFI
+    //  1. Loop through all players (this.pokerTable.players.values())
+    //  2. Check if the player is not this player (player.id !== this.id)
+    //  3. Check if the player is not sitting out (player.isSittingOut())
+    //  4. Loop through the player's action history (player.actionHistory) in reverse order
+    // const rfiPosition =
+
+    // Set up the API request
+    const apiUrl = new URL(
+      "http://localhost:3000/api/trpc/pokerCalculations.getBestPreflopActions"
+    );
+    const params = new URLSearchParams(apiUrl.search);
+    params.append("batch", "1");
+    const input = {
+      maxPlayers: "6",
+      numBigBlinds: 100,
+      hand: formatHandForAPI(this.hand),
+      position: this.position,
+      // rfiPosition: "SB",
+    };
+    params.append("input", JSON.stringify({ 0: { json: input } }));
+    apiUrl.search = params.toString();
+
+    // Log the API request (for debugging purposes)
+    if (DEBUG_API_REQUESTS) {
+      logMessage(`${this.logMessagePrefix}> API Request:`, {
+        color: "cornsilk",
+      });
+      console.log(bodyData["0"]?.json);
+    }
+    logMessage(
+      `${this.logMessagePrefix}> Calculating the best action for the hand \`${bo}\`:`,
+      {
+        color: "cornsilk",
+      }
+    );
+
+    try {
+      const response = await fetch(apiUrl.toString(), {
+        method: "GET",
+        mode: "cors",
+      });
+
+      if (!response.ok) throw new Error("Network response was not ok");
+
+      const json = await response.json();
+      const result = json?.[0]?.result?.data?.json?.result;
+      const bestActions = result?.bestActions;
+
+      // Log the API response (for debugging purposes)
+      if (DEBUG_API_REQUESTS) {
+        logMessage(`${this.logMessagePrefix}> API Response:`, {
+          color: "cornsilk",
+        });
+        console.log(result);
+      }
+
+      // Log the best action(s)
+      logMessage(`${this.logMessagePrefix}> Best Action(s) Received:`, {
+        color: "cornsilk",
+      });
+
+      return bestActions;
+    } catch (error) {
+      logMessage(`${this.logMessagePrefix}> Fetch Error: ${error}`, {
+        color: "red",
+      });
+      console.error(error);
+    }
+  };
 
   getBalance() {
     const previousBalance = this.balance;
@@ -824,7 +951,7 @@ class Player {
     if (JSON.stringify(newHand) !== JSON.stringify(this.hand)) {
       this.hand = newHand;
       if (this.hand.length === 0)
-        logMessage(`${this.logMessagePrefix}Hand have been cleared.`, {
+        logMessage(`${this.logMessagePrefix}Hand has been cleared.`, {
           color: this.isMyPlayer ? "goldenrod" : "lightblue",
         });
       else
@@ -911,7 +1038,7 @@ class Player {
                 false
               )
             : 0
-          : null,
+          : undefined,
         timestamp: formatTimestamp(new Date()),
       };
 
@@ -935,21 +1062,19 @@ class Player {
             ]
           : [action]
       );
-      this.isTurnToAct = action.action.includes(
-        "seconds left to make a move..."
-      )
-        ? true
-        : false;
+      this.updateTurnToAct(
+        currentAction.includes("seconds left to make a move...") ? true : false
+      );
       if (
         LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE ||
-        !action.action.includes("seconds left to make a move...")
+        !currentAction.includes("seconds left to make a move...")
       ) {
         logMessage(
-          `${this.logMessagePrefix}> ${action.action} (at ${action.timestamp})`,
+          `${this.logMessagePrefix}> ${currentAction} (at ${action.timestamp})`,
           {
             color: this.isMyPlayer
               ? "goldenrod"
-              : action.action.includes("seconds left to make a move...")
+              : currentAction.includes("seconds left to make a move...")
               ? "lightgray"
               : "lightblue",
           }
@@ -962,15 +1087,17 @@ class Player {
     return null;
   }
 
-  formatAction(action) {
+  formatAction(action, removeDetails = true) {
     const formattedAction =
       // Check if the action is just a number (e.g. "7" for "7 seconds left to make a move")
       !isNaN(action) ? `${action} seconds left to make a move...` : action;
-    return formattedAction === " seconds left to make a move..."
-      ? "SITTING OUT..."
-      : formattedAction === "SITTING OUT"
-      ? "SITTING OUT..."
-      : formattedAction;
+    return (
+      formattedAction === " seconds left to make a move..."
+        ? "SITTING OUT..."
+        : formattedAction === "SITTING OUT"
+        ? "SITTING OUT..."
+        : formattedAction
+    ).split(removeDetails ? " · " : undefined)[0];
   }
 }
 
@@ -1051,10 +1178,8 @@ class PokerTable {
   nextHand() {
     if (!this.firstHandDealt) {
       // Reset activity after the first hand to prevent calculating statistics without the missing data from the first hand (e.g. if we join the table in the middle of a hand, we don't want to calculate statistics for that hand)
-      for (const player of Array.from(this.players.values())) {
-        player.resetBalanceHistory();
+      for (const player of Array.from(this.players.values()))
         player.resetActionHistory();
-      }
 
       this.firstHandDealt = true;
     }
@@ -1072,6 +1197,14 @@ class PokerTable {
 
     this.stopSyncingTableInfo();
     this.syncTableInfo(false);
+
+    // Add a "NEXT HAND" action to the action history of each player
+    for (const player of Array.from(this.players.values()))
+      player.actionHistory.push({
+        action: "NEXT HAND",
+        timestamp: formatTimestamp(new Date()),
+      });
+    this.updatePlayerPositions();
   }
 
   getBlinds() {
@@ -1210,25 +1343,25 @@ class PokerTable {
       }
     }
 
+    // Mark the user's seat number
+    this.myPlayerSeatNumber = Array.from(this.players.values()).find(
+      (player) => player.isMyPlayer
+    )?.seatNumber;
+
     // Log the other players if they have changed
     if (previousPlayersSize !== this.players.size) {
       logMessage(
         `${this.logMessagePrefix}Players: ${Array.from(this.players.values())
           .map(
             (player) =>
-              `(#${player.seatNumber}) ${this.currencySymbol}${roundFloat(
-                player.balance || 0
-              )}`
+              `(#${player.seatNumber}${player.isMyPlayer ? " - you" : ""}) ${
+                this.currencySymbol
+              }${roundFloat(player.balance || 0)}`
           )
           .join(" | ")}`,
         { color: "orangered" }
       );
     }
-
-    // Mark the user's seat number
-    this.myPlayerSeatNumber = Array.from(this.players.values()).find(
-      (player) => player.isMyPlayer
-    )?.seatNumber;
 
     return this.updatePlayerPositions();
   }
@@ -1393,6 +1526,25 @@ class PokerTable {
           `${curPlayer.logMessagePrefix}Position updated: ${curPlayer.position}`,
           { color: curPlayer.isMyPlayer ? "goldenrod" : "plum" }
         );
+
+        // Add a "POSITION UPDATED" action to the action history of the current player (place it after the last occurance of the "NEXT HAND" action)
+        curPlayer.actionHistory.splice(
+          curPlayer.actionHistory.reduceRight(
+            (acc, action, index) =>
+              action.action === "NEXT HAND" && acc === -1 ? index : acc,
+            -1
+          ) + 1,
+          0,
+          {
+            action: `POSITION UPDATED · ${curPlayer.position}`,
+            timestamp: formatTimestamp(new Date()),
+          }
+        );
+
+        // curPlayer.actionHistory.push({
+        //   action: `POSITION UPDATED · ${curPlayer.position}`,
+        //   timestamp: formatTimestamp(new Date()),
+        // });
       }
 
       // 3. Return the current player with the "BTN" position (the dealer)
@@ -1476,57 +1628,119 @@ class PokerTable {
             .sort((a, b) => a.seatNumber - b.seatNumber),
         ];
 
-        // TODO: assign CO, HJ, LJ BEFORE SB, BB, UTG... (this is how the positions are formatted on Jonathan Little's Poker GTO charts)
+        let unassignedPlayers = [];
+        if (CALCULATE_BEST_ACTIONS) {
+          // TODO: assign CO, HJ, LJ BEFORE SB, BB, UTG... (this is how the positions are formatted on Jonathan Little's Poker GTO charts)
+          // > update this.position calculations (in PokerTable.updatePlayerPositions()) to always start with CO going backwards rather than UTG going forwards
 
-        // Assign the positions.
-        // First, assign SB, BB, UTG
-        for (let i = 0; i <= 2; i++) {
-          const player = pivotedActivePlayersInOrder[i];
+          // Assign the positions.
+          // First, assign SB, BB
+          for (let i = 0; i <= 1; i++) {
+            const player = pivotedActivePlayersInOrder[i];
 
-          // Check if we have reached the end of the player list or if the player already has a position
-          if (!player || player.position !== null) break;
+            // Check if we have reached the end of the player list or if the player already has a position
+            if (!player || player.position !== null) break;
 
-          switch (i) {
-            case 0:
-              player.position = `SB${
-                player.isSittingOut() ? " (SITTING OUT)" : ""
-              }`;
-              break;
-            case 1:
-              player.position = "BB";
-              break;
-            case 2:
-              player.position = "UTG";
-              break;
-            default:
-              break;
+            switch (i) {
+              case 0:
+                player.position = `SB${
+                  player.isSittingOut() ? " (SITTING OUT)" : ""
+                }`;
+                break;
+              case 1:
+                player.position = "BB";
+                break;
+              default:
+                break;
+            }
           }
-        }
 
-        // Get the remaining players with an unassigned position
-        let unassignedPlayers = pivotedActivePlayersInOrder.filter(
-          (player) => player.position === null
-        );
+          // Get the remaining players with an unassigned position
+          unassignedPlayers = pivotedActivePlayersInOrder.filter(
+            (player) => player.position === null
+          );
 
-        // Then, go to the end of the unassigned player list: for each player, assign backwards CO, HJ, LJ.
-        for (let i = unassignedPlayers.length - 1; i >= 0; i--) {
-          const player = unassignedPlayers[i];
+          // Then, go to the end of the unassigned player list: for each player, assign backwards CO, HJ, LJ.
+          for (let i = unassignedPlayers.length - 1; i >= 0; i--) {
+            const player = unassignedPlayers[i];
 
-          // Check if we have reached past the beginning of the player list (which will probably never happen) or if the player already has a position
-          if (!player || player.position !== null) break;
+            // Check if we have reached past the beginning of the player list (which will probably never happen) or if the player already has a position
+            if (!player || player.position !== null) break;
 
-          switch (i) {
-            case unassignedPlayers.length - 1:
-              player.position = "CO";
-              break;
-            case unassignedPlayers.length - 2:
-              player.position = "HJ";
-              break;
-            case unassignedPlayers.length - 3:
-              player.position = "LJ";
-              break;
-            default:
-              break;
+            switch (i) {
+              case unassignedPlayers.length - 1:
+                player.position = "CO";
+                break;
+              case unassignedPlayers.length - 2:
+                player.position = "HJ";
+                break;
+              case unassignedPlayers.length - 3:
+                player.position = "LJ";
+                break;
+              default:
+                break;
+            }
+          }
+
+          // Update the unassignedPlayers array
+          unassignedPlayers = unassignedPlayers.filter(
+            (player) => player.position === null
+          );
+
+          // Now, let's assign the UTG position.
+          const utgPlayer = unassignedPlayers[0];
+          if (utgPlayer) utgPlayer.position = "UTG";
+        } else {
+          // Assign the positions.
+          // First, assign SB, BB, UTG
+          for (let i = 0; i <= 2; i++) {
+            const player = pivotedActivePlayersInOrder[i];
+
+            // Check if we have reached the end of the player list or if the player already has a position
+            if (!player || player.position !== null) break;
+
+            switch (i) {
+              case 0:
+                player.position = `SB${
+                  player.isSittingOut() ? " (SITTING OUT)" : ""
+                }`;
+                break;
+              case 1:
+                player.position = "BB";
+                break;
+              case 2:
+                player.position = "UTG";
+                break;
+              default:
+                break;
+            }
+          }
+
+          // Get the remaining players with an unassigned position
+          unassignedPlayers = pivotedActivePlayersInOrder.filter(
+            (player) => player.position === null
+          );
+
+          // Then, go to the end of the unassigned player list: for each player, assign backwards CO, HJ, LJ.
+          for (let i = unassignedPlayers.length - 1; i >= 0; i--) {
+            const player = unassignedPlayers[i];
+
+            // Check if we have reached past the beginning of the player list (which will probably never happen) or if the player already has a position
+            if (!player || player.position !== null) break;
+
+            switch (i) {
+              case unassignedPlayers.length - 1:
+                player.position = "CO";
+                break;
+              case unassignedPlayers.length - 2:
+                player.position = "HJ";
+                break;
+              case unassignedPlayers.length - 3:
+                player.position = "LJ";
+                break;
+              default:
+                break;
+            }
           }
         }
 
@@ -1570,10 +1784,25 @@ class PokerTable {
           // Ignore non-updated players
           if (player.position === null || player.position?.includes("BTN"))
             continue;
+
           logMessage(
             `${player.logMessagePrefix}Position updated: ${player.position}`,
             {
               color: player.isMyPlayer ? "goldenrod" : "plum",
+            }
+          );
+
+          // Add a "POSITION UPDATED" action to the action history of the current player (place it after the last occurance of the "NEXT HAND" action)
+          player.actionHistory.splice(
+            player.actionHistory.reduceRight(
+              (acc, action, index) =>
+                action.action === "NEXT HAND" && acc === -1 ? index : acc,
+              -1
+            ) + 1,
+            0,
+            {
+              action: `POSITION UPDATED · ${player.position}`,
+              timestamp: formatTimestamp(new Date()),
             }
           );
         }
@@ -1583,6 +1812,36 @@ class PokerTable {
     return this.players;
   }
 }
+
+const formatHandForAPI = (hand) => {
+  // Replace "10" with "T" for each card
+  const formattedCards = hand.map((card) => card.replace("10", "T"));
+
+  // Validate each card's length
+  if (formattedCards.some((card) => card.length !== 2)) return null;
+
+  // Extract ranks and suits
+  const [rank1, suit1] = [
+    formattedCards[0].slice(0, -1),
+    formattedCards[0].slice(-1),
+  ];
+  const [rank2, suit2] = [
+    formattedCards[1].slice(0, -1),
+    formattedCards[1].slice(-1),
+  ];
+
+  // Sort ranks in descending order
+  const sortOrder = "AKQJT98765432";
+  const sortedRanks = [rank1, rank2].sort((a, b) => {
+    return sortOrder.indexOf(a) - sortOrder.indexOf(b);
+  });
+
+  // Determine the suffix ('s', 'o', or '')
+  const suffix = rank1 === rank2 ? "" : suit1 === suit2 ? "s" : "o";
+
+  // Join the sorted cards to a single string with the suffix
+  return `${sortedRanks[0]}${sortedRanks[1]}${suffix}`;
+};
 
 // To format a card (from the "data-qa" attribute value):
 //  1. Get all numbers from the string
