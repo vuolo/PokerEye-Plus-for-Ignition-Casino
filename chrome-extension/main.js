@@ -436,8 +436,8 @@ class HUD {
     const myPlayer = this.pokerTable.players.get(
       this.pokerTable.myPlayerSeatNumber
     );
-    if (!myPlayer || !myPlayer.isTurnToAct) return;
-    let bestActions = myPlayer.bestActions ?? [];
+    if (!myPlayer) return;
+    let bestActions = !myPlayer.isTurnToAct ? [] : myPlayer.bestActions ?? [];
     // bestActions = [
     //   {
     //     action: "Raise",
@@ -1687,6 +1687,7 @@ class PokerTable {
         logMessage(`${this.logMessagePrefix}The board has been cleared.`, {
           color: "mediumpurple",
         });
+        // TODO: more accurate way to detect when the next hand starts (to prevent lots of issues with best action calculations!)
         this.nextHand();
       } else
         logMessage(
