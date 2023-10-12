@@ -760,6 +760,8 @@ class Player {
       if (this.isTurnToAct && this.isMyPlayer) {
         // Refetch hand and position in case they aren't up to date
         this.getHand();
+        for (const player of this.pokerTable.players.values())
+          player.getCurrentAction();
         this.pokerTable.updatePlayerPositions();
 
         if (this.hand.length === 2 && this.position !== null) {
@@ -826,6 +828,8 @@ class Player {
     //  8. (done) Store the position of the earliest RFI action in rfiPosition
     let earliestRfiActionTimestamp = undefined;
     let earliestRfiAction = undefined;
+    let latestRfiActionTimestamp = undefined;
+    let latestRfiAction = undefined;
     let rfiPosition = undefined;
 
     // Find my last occurrence of the "NEXT HAND" action
@@ -870,7 +874,7 @@ class Player {
         );
         const lastAction = splicedActionHistory[lastActionIndex];
 
-        // Check if the player's last RFI action was at least 2bb (otherwise, we consider it a limp)
+        // Check if the player's last RFI action was ≥ 2bb (otherwise, we consider it a limp)
         if (
           lastAction &&
           Math.abs(lastAction.amountBet) >= 2 * this.pokerTable.blinds.big
@@ -885,6 +889,15 @@ class Player {
             earliestRfiActionTimestamp = actionTimestamp;
             earliestRfiAction = lastAction;
             rfiPosition = player.position;
+          }
+
+          // Store the latest possible RFI action
+          if (
+            !latestRfiActionTimestamp ||
+            actionTimestamp > latestRfiActionTimestamp
+          ) {
+            latestRfiActionTimestamp = actionTimestamp;
+            latestRfiAction = lastAction;
           }
         }
       }
@@ -973,7 +986,10 @@ class Player {
           `${this.logMessagePrefix} • ${bestAction.action}${
             bestAction.numBigBlinds != 0
               ? ` ($${formatCurrencyLikeIgnition(
-                  bestAction.numBigBlinds * this.pokerTable.blinds.big
+                  bestAction.numBigBlinds *
+                    (rfiPosition
+                      ? Math.abs(latestRfiAction?.amountBet)
+                      : this.pokerTable.blinds.big)
                 )} - ${bestAction.numBigBlinds}bb)`
               : ""
           } [${roundFloat(bestAction.percentage * 100, 0)}%]`,

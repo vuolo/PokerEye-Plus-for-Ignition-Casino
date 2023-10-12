@@ -5,6 +5,8 @@ import { z } from "zod";
 import { HAND_KEYS } from "~/types/chart";
 import { getBestPreflopAction_6max_100bb } from "~/utils/preflop";
 
+const POSITION_Z_ENUM = z.enum(["LJ", "HJ", "CO", "BTN", "SB", "BB"]);
+
 export const pokerCalculationsRouter = createTRPCRouter({
   getBestPreflopActions: publicProcedure
     .input(
@@ -13,8 +15,8 @@ export const pokerCalculationsRouter = createTRPCRouter({
         numBigBlinds: z.number().int().positive(),
         hand: z.enum(HAND_KEYS),
         // TODO: add const like HAND_KEYS for position and rfiPosition in ~/types/chart.ts
-        position: z.enum(["LJ", "HJ", "CO", "BTN", "SB", "BB"]),
-        rfiPosition: z.enum(["LJ", "HJ", "CO", "BTN", "SB"]).optional(), // "rfi" means "raise first in" (i.e. the first player to raise preflop)
+        position: POSITION_Z_ENUM,
+        rfiPosition: POSITION_Z_ENUM.optional(), // "rfi" means "raise first in" (i.e. the first player to raise preflop)
       }),
     )
     .query(({ input }) => {
@@ -62,7 +64,8 @@ export const pokerCalculationsRouter = createTRPCRouter({
               ...getBestPreflopAction_6max_100bb({
                 hand: input.hand,
                 position: input.position,
-                rfiPosition: input.rfiPosition,
+                rfiPosition:
+                  input.rfiPosition === "BB" ? undefined : input.rfiPosition,
               }),
               input,
             },
