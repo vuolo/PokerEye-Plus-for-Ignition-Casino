@@ -437,7 +437,7 @@ class HUD {
       this.pokerTable.players.values().find((player) => {
         return player.seatNumber === this.pokerTable.myPlayerSeatNumber;
       }).bestActions ?? [];
-      
+
     const bestActionsInnerHTML = `
       <div class="pl-4 pt-2 justify-start h-full mb-[6px] flex flex-col">
         <div class="flex justify-start flex-col gap-[8px]">
@@ -448,8 +448,19 @@ class HUD {
               ${bestActions
                 .map(
                   (bestAction) =>
-                    `<label style="-webkit-tap-highlight-color: transparent; padding: 0 16px;" class="ring-1 ring-orange-300 hover:opacity-80 w-[132px] text-sm h-[40px] bg-[rgba(0,0,0,0.3)] text-white items-center border-0 rounded-[8px] cursor-pointer flex flex-row font-bold overflow-hidden outline-none desktopCheckboxButton Desktop landscape" data-qa="foldPreselectButton">
+                    `<label style="-webkit-tap-highlight-color: transparent; padding: 4px 16px;" class="ring-1 ring-orange-300 hover:opacity-80 w-[132px] text-sm h-[40px] bg-[rgba(0,0,0,0.3)] text-white items-center border-0 rounded-[8px] cursor-pointer flex flex-col font-bold overflow-hidden outline-none desktopCheckboxButton Desktop landscape" data-qa="foldPreselectButton">
                     <span class="text-center w-full">${bestAction.action}</span>
+                    <span class="text-center w-full">${
+                      bestAction.numBigBlinds != 0
+                        ? `($${formatCurrencyLikeIgnition(
+                            bestAction.amountToBet
+                          )} - ${bestAction.numBigBlinds}bb)`
+                        : ""
+                    }</span>
+                    <span class="text-center w-full">[${roundFloat(
+                      bestAction.percentage * 100,
+                      0
+                    )}%]</span>
                   </label>`
                 )
                 .join("")}
@@ -1127,22 +1138,29 @@ class Player {
       logMessage(`${this.logMessagePrefix}> Best Action(s) Calculated:`, {
         color: "cornsilk",
       });
-      for (const bestAction of bestActions)
+      for (const bestAction of bestActions) {
+        // Calculate the amount to bet
+        bestAction.amountToBet = rfiPosition
+          ? bestAction.action === "Call"
+            ? latestRfiAction?.amountBet
+              ? Math.abs(latestRfiAction?.amountBet)
+              : bestAction.numBigBlinds * this.pokerTable.blinds.big
+            : bestAction.numBigBlinds * Math.abs(latestRfiAction?.amountBet)
+          : bestAction.numBigBlinds * this.pokerTable.blinds.big;
+
         logMessage(
           `${this.logMessagePrefix} • ${bestAction.action}${
             bestAction.numBigBlinds != 0
-              ? ` ($${formatCurrencyLikeIgnition(
-                  bestAction.numBigBlinds *
-                    (rfiPosition
-                      ? Math.abs(latestRfiAction?.amountBet)
-                      : this.pokerTable.blinds.big)
-                )} - ${bestAction.numBigBlinds}bb)`
+              ? ` ($${formatCurrencyLikeIgnition(bestAction.amountToBet)} - ${
+                  bestAction.numBigBlinds
+                }bb)`
               : ""
           } [${roundFloat(bestAction.percentage * 100, 0)}%]`,
           {
             color: "cornsilk",
           }
         );
+      }
 
       return bestActions;
     } catch (error) {
