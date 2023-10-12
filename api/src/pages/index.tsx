@@ -8,8 +8,8 @@ export default function Home() {
       maxPlayers: "6",
       numBigBlinds: 100,
       hand: "T3s",
-      position: "SB",
-      rfiPosition: undefined,
+      position: "BB",
+      rfiPosition: "SB",
     });
 
   return (

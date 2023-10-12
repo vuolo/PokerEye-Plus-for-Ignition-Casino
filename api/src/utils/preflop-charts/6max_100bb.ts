@@ -502,6 +502,7 @@ charts["RFI-SB"] = {
         // ...
         "22",
       ],
+
       // [Limp]
       [
         // Row 1
@@ -804,6 +805,7 @@ charts["BTN-vs-LJ-RFI"] = {
         // ...
         "T9s",
       ],
+
       // [Call]
       [
         // Row 1
@@ -904,6 +906,7 @@ charts["BTN-vs-HJ-RFI"] = {
         // ...
         "66",
       ],
+
       // [Call]
       [
         // Row 1
@@ -1005,6 +1008,7 @@ charts["BTN-vs-CO-RFI"] = {
         // ...
         "55",
       ],
+
       // [Call]
       [
         // Row 1
@@ -1051,5 +1055,1066 @@ charts["BTN-vs-CO-RFI"] = {
 };
 
 // [Facing RFI: Out of Position]:
+// ~SB (Facing LJ RFI)
+charts["SB-vs-LJ-RFI"] = {
+  name: "Facing RFI: Out of Position",
+  position: "SB",
+  rfiPosition: "LJ",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs", // ...
+        "A5s",
+
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+
+        // Row 3
+        "AQo", // ...
+        "QQ",
+        "QJs",
+
+        // Row 4
+        // ...
+        "JJ",
+
+        // Row 5
+        // ...
+        "TT",
+
+        // Row 6
+        // ...
+        "99",
+      ],
+    ],
+    actions: ["3Bet"],
+    numBigBlinds: [4.0],
+  }),
+};
+
+// ~SB (Facing HJ RFI)
+charts["SB-vs-HJ-RFI"] = {
+  name: "Facing RFI: Out of Position",
+  position: "SB",
+  rfiPosition: "HJ",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs", // ...
+        "A5s",
+
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+
+        // Row 3
+        "AQo", // ...
+        "QQ",
+        "QJs",
+        "QTs",
+
+        // Row 4
+        // ...
+        "JJ",
+        "JTs",
+
+        // Row 5
+        // ...
+        "TT",
+
+        // Row 6
+        // ...
+        "99",
+
+        // Row 7
+        // ...
+        "88",
+
+        // Row 8
+        // ...
+        "77",
+      ],
+    ],
+    actions: ["3Bet"],
+    numBigBlinds: [4.0],
+  }),
+};
+
+// ~SB (Facing CO RFI)
+charts["SB-vs-CO-RFI"] = {
+  name: "Facing RFI: Out of Position",
+  position: "SB",
+  rfiPosition: "CO",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s", // ...
+        "A5s",
+
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+
+        // Row 3
+        "AQo",
+        "KQo",
+        "QQ",
+        "QJs",
+        "QTs",
+
+        // Row 4
+        // ...
+        "JJ",
+        "JTs",
+        "J9s",
+
+        // Row 5
+        // ...
+        "TT",
+        "T9s",
+
+        // Row 6
+        // ...
+        "99",
+
+        // Row 7
+        // ...
+        "88",
+
+        // Row 8
+        // ...
+        "77",
+
+        // Row 9
+        // ...
+        "66",
+      ],
+    ],
+    actions: ["3Bet"],
+    numBigBlinds: [4.0],
+  }),
+};
+
+// ~SB (Facing BTN RFI)
+charts["SB-vs-BTN-RFI"] = {
+  name: "Facing RFI: Out of Position",
+  position: "SB",
+  rfiPosition: "BTN",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s", // ...
+        "A5s",
+        "A4s",
+
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+        "K9s",
+
+        // Row 3
+        "AQo",
+        "KQo",
+        "QQ",
+        "QJs",
+        "QTs",
+        "Q9s",
+
+        // Row 4
+        "AJo",
+        "KJo", // ...
+        "JJ",
+        "JTs",
+        "J9s",
+
+        // Row 5
+        // ...
+        "TT",
+        "T9s",
+        "T8s",
+
+        // Row 6
+        // ...
+        "99",
+
+        // Row 7
+        // ...
+        "88",
+
+        // Row 8
+        // ...
+        "77",
+
+        // Row 9
+        // ...
+        "66",
+
+        // Row 10
+        // ...
+        "55",
+      ],
+    ],
+    actions: ["3Bet"],
+    numBigBlinds: [4.0],
+  }),
+};
+
+// ~BB (Facing LJ RFI)
+charts["BB-vs-LJ-RFI"] = {
+  name: "Facing RFI: Out of Position",
+  position: "BB",
+  rfiPosition: "LJ",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs", // ...
+        "A5s",
+        "A4s",
+
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+
+        // Row 3
+        // ...
+        "QQ",
+        "QJs",
+
+        // Row 4
+        // ...
+        "JJ",
+        "JTs",
+
+        // Row 9
+        // ...
+        "65s",
+
+        // Row 10
+        // ...
+        "54s",
+      ],
+
+      // [Call]
+      [
+        // Row 1
+        // ...
+        "AJs",
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s",
+        "A6s", // ...
+        "A3s",
+        "A2s",
+
+        // Row 2
+        // ...
+        "KTs",
+        "K9s",
+        "K8s",
+        "K7s",
+        "K6s",
+        "K5s",
+        "K4s",
+        "K3s",
+        "K2s",
+
+        // Row 3
+        "AQo",
+        "KQo", // ...
+        "QTs",
+        "Q9s",
+        "Q8s",
+        "Q7s",
+        "Q6s",
+        "Q5s",
+
+        // Row 4
+        "AJo",
+        "KJo",
+        "QJo", // ...
+        "J9s",
+        "J8s",
+
+        // Row 5
+        "ATo", // ...
+        "JTo",
+        "TT",
+        "T9s",
+        "T8s",
+        "T7s",
+
+        // Row 6
+        // ...
+        "99",
+        "98s",
+        "97s",
+        "96s",
+
+        // Row 7
+        // ...
+        "88",
+        "87s",
+        "86s",
+        "85s",
+
+        // Row 8
+        // ...
+        "77",
+        "76s",
+        "75s",
+        "74s",
+
+        // Row 9
+        // ...
+        "66", // ...
+        "64s",
+        "63s",
+
+        // Row 10
+        // ...
+        "55", // ...
+        "53s",
+
+        // Row 11
+        // ...
+        "44",
+        "43s",
+
+        // Row 12
+        // ...
+        "33",
+        "32s",
+
+        // Row 13
+        // ...
+        "22",
+      ],
+    ],
+    actions: ["3Bet", "Call"],
+    numBigBlinds: [4.0, 2.5],
+  }),
+};
+
+// ~BB (Facing HJ RFI)
+charts["BB-vs-HJ-RFI"] = {
+  name: "Facing RFI: Out of Position",
+  position: "BB",
+  rfiPosition: "HJ",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs", // ...
+        "A9s", // ...
+        "A5s",
+        "A4s",
+
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs", // ...
+        "K5s",
+
+        // Row 3
+        // ...
+        "QQ",
+        "QJs",
+        "QTs",
+
+        // Row 4
+        // ...
+        "JJ",
+        "JTs",
+
+        // Row 5
+        "TT",
+
+        // Row 9
+        // ...
+        "65s",
+
+        // Row 10
+        // ...
+        "54s",
+      ],
+
+      // [Call]
+      [
+        // Row 1
+        // ...
+        "AJs",
+        "ATs", // ...
+        "A8s",
+        "A7s",
+        "A6s", // ...
+        "A3s",
+        "A2s",
+
+        // Row 2
+        // ...
+        "K9s",
+        "K8s",
+        "K7s",
+        "K6s", // ...
+        "K4s",
+        "K3s",
+        "K2s",
+
+        // Row 3
+        "AQo",
+        "KQo", // ...
+        "Q9s",
+        "Q8s",
+        "Q7s",
+        "Q6s",
+        "Q5s",
+
+        // Row 4
+        "AJo",
+        "KJo",
+        "QJo", // ...
+        "J9s",
+        "J8s",
+        "J7s",
+
+        // Row 5
+        "ATo",
+        "KTo",
+        "QTo",
+        "JTo", // ...
+        "T9s",
+        "T8s",
+        "T7s",
+
+        // Row 6
+        "A9o", // ...
+        "99",
+        "98s",
+        "97s",
+        "96s",
+
+        // Row 7
+        // ...
+        "88",
+        "87s",
+        "86s",
+        "85s",
+
+        // Row 8
+        // ...
+        "77",
+        "76s",
+        "75s",
+        "74s",
+
+        // Row 9
+        // ...
+        "66", // ...
+        "64s",
+        "63s",
+
+        // Row 10
+        // ...
+        "55", // ...
+        "53s",
+
+        // Row 11
+        // ...
+        "44",
+        "43s",
+
+        // Row 12
+        // ...
+        "33",
+
+        // Row 13
+        // ...
+        "22",
+      ],
+    ],
+    actions: ["3Bet", "Call"],
+    numBigBlinds: [4.0, 2.5],
+  }),
+};
+
+// ~BB (Facing CO RFI)
+charts["BB-vs-CO-RFI"] = {
+  name: "Facing RFI: Out of Position",
+  position: "BB",
+  rfiPosition: "CO",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [
+        // Row 1
+        "AA",
+        "AKs",
+        "AQs",
+        "AJs", // ...
+        "A9s", // ...
+        "A5s",
+        "A4s",
+
+        // Row 2
+        "AKo",
+        "KK",
+        "KQs",
+        "KJs",
+        "KTs",
+
+        // Row 3
+        "AQo", // ...
+        "QQ",
+        "QJs",
+        "QTs",
+        "Q9s",
+
+        // Row 4
+        // ...
+        "JJ",
+        "JTs",
+        "J9s",
+
+        // Row 5
+        "TT",
+        "T9s",
+
+        // Row 6
+        // ...
+        "99",
+
+        // Row 9
+        // ...
+        "65s",
+
+        // Row 10
+        // ...
+        "54s",
+      ],
+
+      // [Call]
+      [
+        // Row 1
+        // ...
+        "ATs", // ...
+        "A8s",
+        "A7s",
+        "A6s", // ...
+        "A3s",
+        "A2s",
+
+        // Row 2
+        // ...
+        "K9s",
+        "K8s",
+        "K7s",
+        "K6s",
+        "K5s",
+        "K4s",
+        "K3s",
+        "K2s",
+
+        // Row 3
+        // ...
+        "KQo", // ...
+        "Q8s",
+        "Q7s",
+        "Q6s",
+        "Q5s",
+        "Q4s",
+        "Q3s",
+
+        // Row 4
+        "AJo",
+        "KJo",
+        "QJo", // ...
+        "J9s",
+        "J8s",
+        "J7s",
+        "J6s",
+
+        // Row 5
+        "ATo",
+        "KTo",
+        "QTo",
+        "JTo", // ...
+        "T8s",
+        "T7s",
+
+        // Row 6
+        "A9o", // ...
+        "T9o", // ...
+        "98s",
+        "97s",
+        "96s",
+
+        // Row 7
+        // ...
+        "88",
+        "87s",
+        "86s",
+        "85s",
+
+        // Row 8
+        // ...
+        "77",
+        "76s",
+        "75s",
+        "74s",
+
+        // Row 9
+        // ...
+        "66", // ...
+        "64s",
+        "63s",
+
+        // Row 10
+        "A5o", // ...
+        "55", // ...
+        "53s",
+
+        // Row 11
+        // ...
+        "44",
+        "43s",
+
+        // Row 12
+        // ...
+        "33",
+
+        // Row 13
+        // ...
+        "22",
+      ],
+    ],
+    actions: ["3Bet", "Call"],
+    numBigBlinds: [4.0, 2.5],
+  }),
+};
+
+// ~BB (Facing BTN RFI)
+charts["BB-vs-BTN-RFI"] = {
+  name: "Facing RFI: Out of Position",
+  position: "BB",
+  rfiPosition: "BTN",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [],
+
+      // [Call]
+      [],
+    ],
+    actions: ["3Bet", "Call"],
+    numBigBlinds: [4.0, 2.5],
+  }),
+};
 
 // [Blind vs Blind]:
+// ~SB (Facing BB Only)
+charts["SB-vs-BB-Only"] = {
+  name: "Facing BB Only (Small Blind Strategy)",
+  position: "BB",
+  handMap: easyHandMap({
+    hands: [
+      // [Raise/4Bet]
+      [
+        // Row 1
+        // ...
+        "AKs",
+
+        // Row 2
+        // ...
+        "KK",
+
+        // Row 3
+        "AQo", // ...
+        "QQ",
+
+        // Row 4
+        "AJo",
+        "KQo", // ...
+        "JJ",
+      ],
+
+      // [Raise/Call]
+      [
+        // Row 1
+        // ...
+        "ATs",
+        "A9s",
+        "A8s",
+        "A7s", // ...
+        "A5s",
+
+        // Row 2
+        // ...
+        "KJs",
+        "KTs", // ...
+        "K8s", // ...
+        "K5s",
+
+        // Row 3
+        // ...
+        "QJs",
+        "QTs",
+
+        // Row 4
+        // ...
+        "JTs",
+
+        // Row 5
+        // ...
+        "T9s",
+
+        // Row 6
+        // ...
+        "K9o",
+        "Q9o",
+        "J9o",
+
+        // Row 7
+        // ...
+        "98o",
+
+        // Row 9
+        // ...
+        "65s",
+
+        // Row 10
+        // ...
+        "54s",
+
+        // Row 12
+        // ...
+        "33",
+
+        // Row 13
+        // ...
+        "22",
+      ],
+
+      // [Raise/Fold]
+      [
+        // Row 2
+        // ...
+        "K3s",
+        "K2s",
+
+        // Row 3
+        // ...
+        "Q5s",
+        "Q4s",
+        "Q3s",
+        "Q2s",
+
+        // Row 4
+        // ...
+        "J7s",
+        "J6s",
+        "J5s",
+        "J4s",
+
+        // Row 5
+        // ...
+        "T6s",
+        "T5s",
+
+        // Row 6
+        // ...
+        "96s",
+
+        // Row 7
+        "A8o",
+        "K8o", // ...
+        "T8o",
+
+        // Row 8
+        "A7o",
+        "K7o",
+
+        // Row 9
+        "A6o", // ...
+        "64s",
+
+        // Row 10
+        // ...
+        "53s",
+
+        // Row 11
+        "A4o",
+      ],
+
+      // [Limp/Raise]
+      [
+        // Row 1
+        "AA", // ...
+        "AQs",
+        "AJs",
+
+        // Row 2
+        "AKo", // ...
+        "KQs", // ...
+        "K9s",
+
+        // Row 3
+        // ...
+        "Q9s",
+
+        // Row 4
+        // ...
+        "J9s",
+
+        // Row 5
+        // ...
+        "TT",
+
+        // Row 6
+        // ...
+        "99",
+        "98s",
+
+        // Row 7
+        // ...
+        "88",
+        "87s",
+      ],
+
+      // [Limp/Call]
+      [
+        // Row 1
+        // ...
+        "A6s", // ...
+        "A4s",
+        "A3s",
+        "A2s",
+
+        // Row 2
+        // ...
+        "K7s",
+        "K6s", // ...
+        "K4s",
+
+        // Row 3
+        // ...
+        "KQo", // ...
+        "Q8s",
+        "Q7s",
+        "Q6s",
+
+        // Row 4
+        // ...
+        "QJo", // ...
+        "J8s",
+
+        // Row 5
+        "ATo",
+        "KTo",
+        "QTo",
+        "JTo", // ...
+        "T8s",
+        "T7s",
+
+        // Row 6
+        "A9o", // ...
+        "T9o", // ...
+        "97s",
+
+        // Row 7
+        // ...
+        "86s",
+        "85s",
+
+        // Row 8
+        // ...
+        "77",
+        "76s",
+        "75s",
+
+        // Row 9
+        // ...
+        "66",
+
+        // Row 10
+        "A5o", // ...
+        "55",
+
+        // Row 11
+        // ...
+        "44",
+      ],
+
+      // [Limp/Fold]
+      [
+        // Row 4
+        // ...
+        "J3s",
+        "J2s",
+
+        // Row 5
+        // ...
+        "T4s",
+        "T3s",
+
+        // Row 6
+        // ...
+        "95s",
+        "94s",
+
+        // Row 7
+        // ...
+        "Q8o",
+        "J8o", // ...
+        "84s",
+
+        // Row 8
+        // ...
+        "Q7o",
+        "J7o",
+        "T7o",
+        "97o",
+        "87o", // ...
+        "74s",
+
+        // Row 9
+        // ...
+        "K6o",
+        "Q6o", // ...
+        "86o",
+        "76o", // ...
+        "63s",
+
+        // Row 10
+        // ...
+        "K5o",
+        "Q5o",
+
+        // Row 11
+        // ...
+        "K4o", // ...
+        "43s",
+
+        // Row 12
+        "A3o",
+
+        // Row 13
+        "A2o",
+      ],
+    ],
+    actions: [
+      // [Raise/...]
+      "Raise/4Bet",
+      "Raise/Call",
+      "Raise/Fold",
+
+      // [Limp/...]
+      "Limp/Raise",
+      "Limp/Call",
+      "Limp/Fold",
+    ],
+    percentages: [
+      [0.5, 0.5],
+      [0.5, 0.5],
+      [0.5, 0.5],
+      [0.5, 0.5],
+      [0.5, 0.5],
+      [0.5, 0.5],
+    ],
+    numBigBlinds: [
+      [3.0, 2.5],
+      [3.0, 1.0],
+      [3.0, 0.0],
+      [0.5, 3.0],
+      [0.5, 2.5],
+      [0.5, 0.0],
+    ],
+  }),
+};
+
+// ~BB (Facing SB Limp)
+charts["BB-vs-SB-Limp"] = {
+  name: "Facing SB Limp",
+  position: "BB",
+  handMap: easyHandMap({
+    hands: [
+      // [Raise]
+      [],
+
+      // [Call]
+      [],
+    ],
+    actions: ["Raise", "Call"],
+    numBigBlinds: [3.5, 2.5],
+  }),
+};
+
+// ~BB (Facing SB Raise)
+charts["BB-vs-SB-Raise"] = {
+  name: "Facing SB Raise",
+  position: "BB",
+  rfiPosition: "SB",
+  handMap: easyHandMap({
+    hands: [
+      // [3Bet]
+      [],
+
+      // [Call]
+      [],
+    ],
+    actions: ["3Bet", "Call"],
+    numBigBlinds: [4.0, 2.5],
+  }),
+};

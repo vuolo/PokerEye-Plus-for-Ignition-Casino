@@ -9,8 +9,8 @@ const DEFAULT_HAND_MAP: HandMap = HAND_KEYS.reduce((acc, hand) => {
 export type EasyHandMapParams = {
   hands: (keyof HandMap)[][];
   actions: Action[];
-  percentages?: number[];
-  numBigBlinds: number[];
+  percentages?: number[] | number[][];
+  numBigBlinds: number[] | number[][];
 };
 
 export const easyHandMap = ({
@@ -26,13 +26,18 @@ export const easyHandMap = ({
         return handGroup.map((hand) => {
           return [
             hand,
-            [
-              {
-                action: actions[index],
-                percentage: percentages[index],
-                numBigBlinds: numBigBlinds[index],
-              },
-            ],
+            (actions[index] ?? "...").split("/")?.map((action, actionIdx) => {
+              return {
+                action,
+                // Check for !number[][] type (i.e. number[]) for percentages and numBigBlinds
+                percentage: !Array.isArray(percentages[index])
+                  ? (percentages[index] as number)
+                  : (percentages as number[][])[index]?.[actionIdx],
+                numBigBlinds: !Array.isArray(numBigBlinds)
+                  ? (numBigBlinds[index] as number)
+                  : (numBigBlinds as number[][])[index]?.[actionIdx],
+              };
+            }),
           ];
         });
       }),

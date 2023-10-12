@@ -17,8 +17,15 @@ export const getBestPreflopAction_6max_100bb = ({
   rfiPosition,
 }: GetBestPreflopActionsParams): GetBestPreflopActionsResult => {
   return {
-    bestActions: rfiPosition
-      ? []
-      : charts_6max_100bb[`RFI-${position}`]?.handMap[hand] ?? [],
+    bestActions:
+      (rfiPosition
+        ? // TODO: Check if position = "BB" AND "SB" player limped to use the "BB-vs-SB-Limp" chart
+          position === "BB" && rfiPosition === "SB"
+          ? charts_6max_100bb[`BB-vs-SB-Raise`]?.handMap[hand]
+          : charts_6max_100bb[`${position}-vs-${rfiPosition}-RFI`]?.handMap[
+              hand
+            ]
+        : // TODO: Check if position = "SB" AND all players folded to SB to use the "SB-vs-BB-Only" chart
+          charts_6max_100bb[`RFI-${position}`]?.handMap[hand]) ?? [],
   };
 };

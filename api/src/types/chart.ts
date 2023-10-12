@@ -1,6 +1,21 @@
 export type Position = "LJ" | "HJ" | "CO" | "BTN" | "SB" | "BB";
 export type RfiPosition = Exclude<Position, "BB">;
-export type Action = "Limp" | "Call" | "Raise" | "3Bet" | "Fold";
+export type Action =
+  | "Limp"
+  | "Call"
+  | "Raise"
+  | "3Bet"
+  | "Fold"
+
+  // [Raise/...]
+  | "Raise/4Bet"
+  | "Raise/Call"
+  | "Raise/Fold"
+
+  // [Limp/...]
+  | "Limp/Raise"
+  | "Limp/Call"
+  | "Limp/Fold";
 
 export type BestAction = {
   action: Action;
@@ -20,7 +35,10 @@ export type Charts = {
 };
 type ChartKey =
   | `${Chart["name"]}-${Chart["position"]}`
-  | `${Chart["position"]}-vs-${Chart["rfiPosition"]}-RFI`;
+  | `${Chart["position"]}-vs-${Chart["rfiPosition"]}-RFI`
+  | `${Chart["position"]}-vs-${Chart["rfiPosition"]}-Limp`
+  | `${Chart["position"]}-vs-${Chart["rfiPosition"]}-Raise`
+  | `${Chart["rfiPosition"]}-vs-${Chart["position"]}-Only`;
 
 export const HAND_KEYS = [
   // Row 1
