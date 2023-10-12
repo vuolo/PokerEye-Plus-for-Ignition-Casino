@@ -712,6 +712,12 @@ class Player {
     }
   }
 
+  resetBalanceHistory() {
+    this.balance = undefined;
+    this.balanceHistory = [];
+    this.numBigBlinds = undefined;
+  }
+
   resetActionHistory() {
     this.actionHistory = [];
     this.actionHistoryPerHand = new Map();
@@ -842,7 +848,7 @@ class Player {
       "POST BB",
       "ALL-IN",
       "ALL-IN · x%",
-    ].includes(action);
+    ].some((moneyAction) => action.includes(moneyAction));
   }
 
   didUserPutInMoney = (action = undefined) =>
@@ -892,14 +898,31 @@ class Player {
         action: currentAction,
         amountBet: this.isPutInMoneyAction(currentAction)
           ? this.balanceHistory.length >= 2
-            ? this.balance -
-              this.balanceHistory[this.balanceHistory.length - 2].balance
+            ? roundFloat(
+                this.balance -
+                  this.balanceHistory[this.balanceHistory.length - 2].balance,
+                2,
+                false
+              )
             : this.balanceHistory.length === 1
-            ? this.balance - this.balanceHistory[0].balance
+            ? roundFloat(
+                this.balance - this.balanceHistory[0].balance,
+                2,
+                false
+              )
             : 0
           : null,
         timestamp: formatTimestamp(new Date()),
       };
+
+      // Update balance history
+      if (this.isPutInMoneyAction(currentAction)) {
+        this.balanceHistory[this.balanceHistory.length - 1] = {
+          ...this.balanceHistory[this.balanceHistory.length - 1],
+          netDifference: action.amountBet,
+          action: currentAction,
+        };
+      }
 
       // Add the action object to the actionHistory array
       this.actionHistory.push(action);
@@ -1028,8 +1051,10 @@ class PokerTable {
   nextHand() {
     if (!this.firstHandDealt) {
       // Reset activity after the first hand to prevent calculating statistics without the missing data from the first hand (e.g. if we join the table in the middle of a hand, we don't want to calculate statistics for that hand)
-      for (const player of Array.from(this.players.values()))
+      for (const player of Array.from(this.players.values())) {
+        player.resetBalanceHistory();
         player.resetActionHistory();
+      }
 
       this.firstHandDealt = true;
     }
