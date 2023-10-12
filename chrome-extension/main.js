@@ -1,4 +1,37 @@
-const CALCULATE_BEST_ACTIONS = true;
+// attribution.js
+const SOFTWARE_NAME = "PokerEye+ (Plus) for Ignition Casino";
+const SOFTWARE_VERSION = "1.0.0";
+const ASCII_LOGO = `
+                    @                   
+                    @                   
+      @@            @            @@     
+       @@                       @@      
+              @@@@@@@@@@@@@             
+        @@@@ @@,,,,,/@@@,,@@ @@@@       
+     @@@   @@,,,*,@@@@@,,@@,@@   @@@    
+  @@@     @@,@@,@@@,,,@@@,,,,@@     @@@ 
+@@@       @,,,,@@,,,,,,,@@,@@,@       @@
+  @@@     @@,,@,@@@@,@@@@,*@,@@     @@@ 
+     @@@   @@,@(,,*@@@*,@/,,@@   @@@    
+        #@@@ @@,,@@@/,,,,,@@ @@@.       
+              @@@@@@@@@@@@@             
+       @@                       @@      
+      @@            @            @@     
+                    @                   `;
+const ASCII_LOGO_BORDER_Y = new Array(40).fill("=").join("");
+
+function displayAttribution() {
+  console.log(
+    "%c%s%c%s",
+    "color: magenta; background: black;",
+    `${ASCII_LOGO_BORDER_Y}${ASCII_LOGO}\n${ASCII_LOGO_BORDER_Y}\n\n`,
+    "color: magenta; font-size: 1.5em; background: black; font-weight: bold;",
+    `${SOFTWARE_NAME} v${SOFTWARE_VERSION}\n`
+  );
+}
+
+// main.js
+const CALCULATE_BEST_ACTIONS_DEFAULT = true;
 const DEBUG_API_REQUESTS = false;
 const TICK_RATE = 100; // ms
 const LOG_PLAYER_SECONDS_LEFT_TO_MAKE_A_MOVE = false;
@@ -105,6 +138,7 @@ class HUD {
     this.isCreated = undefined;
     this.isVisible = ENABLE_HUD_VISIBILITY_BY_DEFAULT;
     this.showBB = SHOW_BB_BY_DEFAULT;
+    this.showBestActions = CALCULATE_BEST_ACTIONS_DEFAULT;
 
     this.myPlayer = undefined;
     this.menuPosition = INITIAL_MENU_POSITION;
@@ -142,6 +176,7 @@ class HUD {
   close() {
     this.stopSyncingDOM();
     this.hideBBs();
+    this.hideBestActions();
     this.removeHUD();
   }
 
@@ -206,6 +241,9 @@ class HUD {
 
         // Refresh the shown BB for each player (if this.showBB is true)
         if (this.showBB) this.displayBBs();
+
+        // Refresh the best actions for each player (if this.showBestActions is true)
+        if (this.showBestActions) this.displayBestActions();
       }
     } catch (error) {
       console.error(error);
@@ -394,6 +432,107 @@ class HUD {
     }
   }
 
+  displayBestActions() {
+    const bestActions =
+      this.pokerTable.players.values().find((player) => {
+        return player.seatNumber === this.pokerTable.myPlayerSeatNumber;
+      }).bestActions ?? [];
+      
+    const bestActionsInnerHTML = `
+      <div class="pl-4 pt-2 justify-start h-full mb-[6px] flex flex-col">
+        <div class="flex justify-start flex-col gap-[8px]">
+            <div class="flex flex-1 justify-center"><span class="text-lg font-bold text-orange-300 underline">${
+              bestActions.length > 0 ? "Best Actions" : ""
+            }</span></div>
+            <div class="flex gap-[8px]">
+              ${bestActions
+                .map(
+                  (bestAction) =>
+                    `<label style="-webkit-tap-highlight-color: transparent; padding: 0 16px;" class="ring-1 ring-orange-300 hover:opacity-80 w-[132px] text-sm h-[40px] bg-[rgba(0,0,0,0.3)] text-white items-center border-0 rounded-[8px] cursor-pointer flex flex-row font-bold overflow-hidden outline-none desktopCheckboxButton Desktop landscape" data-qa="foldPreselectButton">
+                    <span class="text-center w-full">${bestAction.action}</span>
+                  </label>`
+                )
+                .join("")}
+            </div>
+        </div>
+      </div>`;
+
+    const foundBestActionsContainer = this.doc.querySelector(
+      "#PokerEyePlus-bestActionsContainer"
+    );
+    if (foundBestActionsContainer) {
+      if (foundBestActionsContainer.innerHTML !== bestActionsInnerHTML)
+        foundBestActionsContainer.innerHTML = bestActionsInnerHTML;
+      return;
+    }
+
+    const bestActionsContainer = this.doc.createElement("div");
+    bestActionsContainer.id = "PokerEyePlus-bestActionsContainer";
+    bestActionsContainer.innerHTML = bestActionsInnerHTML;
+    this.bestActionsContainer = bestActionsContainer;
+
+    // Place it in the footer container's child element with class 'right'
+    this.footerContainer
+      .querySelector(".right")
+      .appendChild(bestActionsContainer);
+  }
+
+  hideBestActions() {
+    this.doc
+      ?.querySelectorAll("#PokerEyePlus-bestActionsContainer")
+      ?.forEach((node) => node.remove());
+  }
+
+  toggleShowBestActions() {
+    this.showBestActions = !this.showBestActions;
+    this.updateShowBestActionsSwitchStyling();
+
+    if (!this.showBestActions) this.hideBestActions();
+
+    logMessage(
+      `${this.pokerTable.logMessagePrefix}Show Best Actions toggled ${
+        this.showBestActions ? "on" : "off"
+      }`,
+      { color: "cyan" }
+    );
+  }
+
+  createToggleShowBestActionsSwitch() {
+    const container = this.doc.createElement("div");
+    container.id = "PokerEyePlus-toggleShowBestActionsSwitch";
+    container.className = `${this.ignitionSwitchContainerClassName} cursor-pointer text-sm font-bold`;
+    container.innerHTML = `
+      <div class="${this.ignitionSwitchBarClassName}">
+        <div class="${this.ignitionSwitchButtonClassName}"></div>
+      </div>  
+      <div class="mt-[1px]">Show Best Actions</div>
+    `;
+    this.toggleShowBestActionsSwitch = container;
+
+    container.addEventListener("click", () => this.toggleShowBestActions());
+    this.updateShowBestActionsSwitchStyling();
+
+    return container;
+  }
+
+  updateShowBestActionsSwitchStyling() {
+    const bar = this.toggleShowBestActionsSwitch.querySelector(
+      `.${this.ignitionSwitchBarClassName}`
+    );
+    const button = this.toggleShowBestActionsSwitch.querySelector(
+      `.${this.ignitionSwitchButtonClassName}`
+    );
+    if (this.showBestActions) {
+      bar.classList.add("switchedOn");
+      bar.classList.remove("bg-red-200");
+      button.classList.add("switchedOn");
+    } else {
+      bar.classList.remove("switchedOn");
+      bar.classList.add("bg-red-200");
+      button.classList.remove("switchedOn");
+    }
+  }
+
   // PokerEye+ main menu (only shows when this.isVisible)
   // An easy-to-use Chrome extension that records & calculates statistics while playing on Ignition Casino's Online Poker in your browser.
   createPokerEyeMenu(refreshOnly = false) {
@@ -404,7 +543,7 @@ class HUD {
 
     const detailsPanel = `
       <!-- Most Recent Action -->
-      <div class="flex justify-between items-center px-1 rounded-sm">
+      <div class="flex justify-between items-center px-1 rounded-sm space-x-2">
         <div class="flex flex-1 justify-start items-center">
           <span class="iconItem">
             <i class="icon-component icon-hand-history opacity-[75%]"></i>
@@ -549,6 +688,10 @@ class HUD {
     // Show BB switch
     const showBBSwitch = this.createToggleShowBBSwitch();
     underneathDetailsPanelContainer.appendChild(showBBSwitch);
+
+    // Show best actions switch
+    const showBestActionsSwitch = this.createToggleShowBestActionsSwitch();
+    underneathDetailsPanelContainer.appendChild(showBestActionsSwitch);
 
     menu.appendChild(container);
     this.pokerEyeMenu = menu;
@@ -769,7 +912,10 @@ class Player {
             color: "goldenrod",
           });
 
-          if (CALCULATE_BEST_ACTIONS && this.pokerTable.firstHandDealt)
+          if (
+            this.pokerTable.hud.showBestActions &&
+            this.pokerTable.firstHandDealt
+          )
             void (async () => {
               this.bestActions = (await this.getBestActions()) ?? [];
               if (this.bestActions.length === 0)
@@ -1772,7 +1918,7 @@ class PokerTable {
         ];
 
         let unassignedPlayers = [];
-        if (CALCULATE_BEST_ACTIONS) {
+        if (this.hud.showBestActions) {
           // TODO: assign CO, HJ, LJ BEFORE SB, BB, UTG... (this is how the positions are formatted on Jonathan Little's Poker GTO charts)
           // > update this.position calculations (in PokerTable.updatePlayerPositions()) to always start with CO going backwards rather than UTG going forwards
 
@@ -2202,37 +2348,5 @@ function generateUUID() {
     generateRandom16BitNumber() +
     generateRandom16BitNumber() +
     generateRandom16BitNumber()
-  );
-}
-
-// attribution.js
-const SOFTWARE_NAME = "PokerEye+ (Plus) for Ignition Casino";
-const SOFTWARE_VERSION = "1.0.0";
-const ASCII_LOGO = `
-                    @                   
-                    @                   
-      @@            @            @@     
-       @@                       @@      
-              @@@@@@@@@@@@@             
-        @@@@ @@,,,,,/@@@,,@@ @@@@       
-     @@@   @@,,,*,@@@@@,,@@,@@   @@@    
-  @@@     @@,@@,@@@,,,@@@,,,,@@     @@@ 
-@@@       @,,,,@@,,,,,,,@@,@@,@       @@
-  @@@     @@,,@,@@@@,@@@@,*@,@@     @@@ 
-     @@@   @@,@(,,*@@@*,@/,,@@   @@@    
-        #@@@ @@,,@@@/,,,,,@@ @@@.       
-              @@@@@@@@@@@@@             
-       @@                       @@      
-      @@            @            @@     
-                    @                   `;
-const ASCII_LOGO_BORDER_Y = new Array(40).fill("=").join("");
-
-function displayAttribution() {
-  console.log(
-    "%c%s%c%s",
-    "color: magenta; background: black;",
-    `${ASCII_LOGO_BORDER_Y}${ASCII_LOGO}\n${ASCII_LOGO_BORDER_Y}\n\n`,
-    "color: magenta; font-size: 1.5em; background: black; font-weight: bold;",
-    `${SOFTWARE_NAME} v${SOFTWARE_VERSION}\n`
   );
 }
