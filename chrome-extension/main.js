@@ -893,7 +893,7 @@ class Player {
     this.pokerTable.rfiPosition = rfiPosition;
     if (rfiPosition) {
       logMessage(
-        `${this.logMessagePrefix}> RFI position detected: ${rfiPosition} (${
+        `${this.logMessagePrefix} • RFI position detected: ${rfiPosition} (${
           earliestRfiAction.action
         } $${formatCurrencyLikeIgnition(
           Math.abs(earliestRfiAction.amountBet)

@@ -1,6 +1,7 @@
 export type Position = "LJ" | "HJ" | "CO" | "BTN" | "SB" | "BB";
 export type RfiPosition = Exclude<Position, "BB">;
 export type Action =
+  | "Check"
   | "Limp"
   | "Call"
   | "Raise"

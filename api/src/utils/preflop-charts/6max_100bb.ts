@@ -2378,8 +2378,8 @@ charts["BB-vs-SB-Limp"] = {
     actions: ["Raise"],
     numBigBlinds: [3.5],
     defaultHandMap: defaultHandMap({
-      action: "Call",
-      numBigBlinds: 2.5,
+      action: "Check",
+      numBigBlinds: 0.0,
     }),
   }),
 };
